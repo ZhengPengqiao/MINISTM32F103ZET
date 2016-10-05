@@ -10,6 +10,7 @@
 #include "diag/Trace.h"
 #include "stm32f10x_conf.h"
 #include "Led.h"
+#include "Lcd.h"
 #include "Timer.h"
 // ----------------------------------------------------------------------------
 //
@@ -51,8 +52,13 @@
 
 int main(void)
 {
-  timer_init();
+  timer_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
+  LCD_Init();  //初始化LCD
+  LCD_ShowString(30,40,210,24,24,(u8*)"hello world");
+  LCD_ShowString(30,70,200,16,16,(u8*)"TFTLCD TEST");
+  LCD_ShowString(30,90,200,16,16,(u8*)"Look Here");
+  LCD_ShowString(30,130,200,12,12,(u8*)"2016/10/05");
 	while(1)
 	{
 	  led_on(0);  //点亮LED0
