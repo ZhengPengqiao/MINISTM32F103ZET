@@ -58,12 +58,12 @@ int main(void)
 	  led_on(0);  //点亮LED0
 	  led_off(1); //熄灭LED1
 
-	  timer_ms(2000);
+	  timer_ms(1000);
 
 		led_off(0);  //熄灭LED0
 		led_on(1);   //点亮LED1
 
-		timer_ms(2000);
+		timer_ms(1000);
 
 	}
 }
