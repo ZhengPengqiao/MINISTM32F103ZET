@@ -52,24 +52,26 @@
 
 int main(void)
 {
+  unsigned char key;
   timer_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
   LCD_Init();  //初始化LCD
+  key_init();
   LCD_ShowString(30,40,210,24,24,(u8*)"hello world");
   LCD_ShowString(30,70,200,16,16,(u8*)"TFTLCD TEST");
   LCD_ShowString(30,90,200,16,16,(u8*)"Look Here");
   LCD_ShowString(30,130,200,12,12,(u8*)"2016/10/05");
 	while(1)
 	{
-	  led_on(0);  //点亮LED0
-	  led_off(1); //熄灭LED1
-
-	  timer_ms(1000);
-
-		led_off(0);  //熄灭LED0
-		led_on(1);   //点亮LED1
-
-		timer_ms(1000);
+      key = key_scan();
+      if( key == 2)
+      {
+        led_toggle(0);
+      }
+      if( key == 3 )
+      {
+        led_toggle(1);
+      }
 
 	}
 }
