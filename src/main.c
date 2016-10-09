@@ -83,7 +83,7 @@ int main(void)
 		if (USART_RX_STA & 0x8000)
 		{
 			len = USART_RX_STA & 0x3fff;
-			iprintf("Your Data:\r\n");
+			printf("you imput is:\r\n");
 
 			for (t = 0; t < len; t++)
 			{
@@ -91,7 +91,8 @@ int main(void)
 				while (USART_GetFlagStatus(USART1, USART_FLAG_TC) != SET)
 					;
 			}
-			iprintf("\r\n");
+			printf("\r\n");
+			LCD_ShowString(30, 230, 200, 12, 12, (u8*) USART_RX_BUF);
 			USART_RX_STA = 0;
 		}
 	}
