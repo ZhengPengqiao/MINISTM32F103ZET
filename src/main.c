@@ -11,6 +11,8 @@
 #include "stm32f10x_conf.h"
 #include "Led.h"
 #include "Lcd.h"
+#include "usart.h"
+#include "Key.h"
 #include "Timer.h"
 // ----------------------------------------------------------------------------
 //
@@ -40,7 +42,6 @@
 // so please adjust the PLL settings in system/src/cmsis/system_stm32f10x.c
 //
 
-
 // ----- main() ---------------------------------------------------------------
 
 // Sample pragmas to cope with warnings. Please note the related line at
@@ -52,27 +53,43 @@
 
 int main(void)
 {
-  unsigned char key;
-  timer_init(); //初始化系统滴答定时器
+	unsigned char key;
+	int t;
+	int len;
+	timer_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
-  LCD_Init();  //初始化LCD
-  key_init();
-  LCD_ShowString(30,40,210,24,24,(u8*)"hello world");
-  LCD_ShowString(30,70,200,16,16,(u8*)"TFTLCD TEST");
-  LCD_ShowString(30,90,200,16,16,(u8*)"Look Here");
-  LCD_ShowString(30,130,200,12,12,(u8*)"2016/10/05");
-	while(1)
+	LCD_Init();  //初始化LCD
+	key_init();
+	uart_init(115200);
+	LCD_ShowString(30, 40, 210, 24, 24, (u8*) "hello world");
+	LCD_ShowString(30, 70, 200, 16, 16, (u8*) "TFTLCD TEST");
+	LCD_ShowString(30, 90, 200, 16, 16, (u8*) "Look Here");
+	LCD_ShowString(30, 130, 200, 12, 12, (u8*) "2016/10/05");
+	while (1)
 	{
-      key = key_scan();
-      if( key == 2)
-      {
-        led_toggle(0);
-      }
-      if( key == 3 )
-      {
-        led_toggle(1);
-      }
+		key = key_scan();
+		if (key == 2)
+		{
+			led_toggle(0);
+		}
+		if (key == 3)
+		{
+			led_toggle(1);
+		}
 
+		if (USART_RX_STA & 0x8000)
+		{
+			len = USART_RX_STA & 0x3fff;
+			sendString("Your Data:\r\n",12);
+			for (t = 0; t < len; t++)
+			{
+				USART_SendData(USART1, USART_RX_BUF[t]);
+				while (USART_GetFlagStatus(USART1, USART_FLAG_TC) != SET)
+					;
+			}
+			sendString("\r\n",2);
+			USART_RX_STA = 0;
+		}
 	}
 }
 
