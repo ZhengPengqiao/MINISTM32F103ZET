@@ -61,6 +61,9 @@ int main(void)
 	LCD_Init();  //初始化LCD
 	key_init();
 	uart_init(115200);
+    setvbuf(stdin, NULL, _IONBF, 0);
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
 	LCD_ShowString(30, 40, 210, 24, 24, (u8*) "hello world");
 	LCD_ShowString(30, 70, 200, 16, 16, (u8*) "TFTLCD TEST");
 	LCD_ShowString(30, 90, 200, 16, 16, (u8*) "Look Here");
@@ -80,14 +83,15 @@ int main(void)
 		if (USART_RX_STA & 0x8000)
 		{
 			len = USART_RX_STA & 0x3fff;
-			sendString("Your Data:\r\n",12);
+			iprintf("Your Data:\r\n");
+
 			for (t = 0; t < len; t++)
 			{
 				USART_SendData(USART1, USART_RX_BUF[t]);
 				while (USART_GetFlagStatus(USART1, USART_FLAG_TC) != SET)
 					;
 			}
-			sendString("\r\n",2);
+			iprintf("\r\n");
 			USART_RX_STA = 0;
 		}
 	}

@@ -14,8 +14,15 @@
 #define USART_REC_LEN  			200  	//接收缓冲区长度
 extern u8 USART_RX_BUF[USART_REC_LEN];  //接受缓冲区
 extern u16 USART_RX_STA;                 //接受状态
+#ifdef __GNUC__
+/* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
+   set to 'Yes') calls __io_putchar() */
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
 
-
+extern PUTCHAR_PROTOTYPE;
 /*******************************************************************************
  * 函数名称 : sendString
  * 函数介绍 : 发送一个字符串
