@@ -84,7 +84,6 @@ int main(void)
 		{
 			len = USART_RX_STA & 0x3fff;
 			printf("you imput is:\r\n");
-
 			for (t = 0; t < len; t++)
 			{
 				USART_SendData(USART1, USART_RX_BUF[t]);
