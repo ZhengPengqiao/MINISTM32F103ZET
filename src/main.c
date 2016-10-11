@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "diag/Trace.h"
 #include "stm32f10x_conf.h"
 #include "Led.h"
@@ -54,16 +55,13 @@
 int main(void)
 {
 	unsigned char key;
-	int t;
-	int len;
+	char str[100];
+	int len = 0;
 	timer_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
 	LCD_Init();  //初始化LCD
 	key_init();
 	uart_init(115200);
-    setvbuf(stdin, NULL, _IONBF, 0);
-    setvbuf(stdout, NULL, _IONBF, 0);
-    setvbuf(stderr, NULL, _IONBF, 0);
 	LCD_ShowString(30, 40, 210, 24, 24, (u8*) "hello world");
 	LCD_ShowString(30, 70, 200, 16, 16, (u8*) "TFTLCD TEST");
 	LCD_ShowString(30, 90, 200, 16, 16, (u8*) "Look Here");
@@ -75,25 +73,14 @@ int main(void)
 		{
 			led_toggle(0);
 		}
+
 		if (key == 3)
 		{
 			led_toggle(1);
 		}
 
-		if (USART_RX_STA & 0x8000)
-		{
-			len = USART_RX_STA & 0x3fff;
-			printf("you imput is:\r\n");
-			for (t = 0; t < len; t++)
-			{
-				USART_SendData(USART1, USART_RX_BUF[t]);
-				while (USART_GetFlagStatus(USART1, USART_FLAG_TC) != SET)
-					;
-			}
-			printf("\r\n");
-			LCD_ShowString(30, 230, 200, 12, 12, (u8*) USART_RX_BUF);
-			USART_RX_STA = 0;
-		}
+		len = readStringRaw(str,100);
+		printf("%s, %d\n",str,len);
 	}
 }
 
