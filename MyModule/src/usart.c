@@ -22,17 +22,8 @@
 /*******************************************************************************
  *定义全局变量
  ******************************************************************************/
-u8 USART_RX_BUF[USART_REC_LEN];
-u16 USART_RX_STA;
-
-PUTCHAR_PROTOTYPE {
-	/* Place your implementation of fputc here */
-	USART_SendData(USART1, (uint8_t) ch);
-	/* Loop until the end of transmission */
-	while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) {
-	}
-	return ch;
-}
+u8 USART_RX_BUF[RX_BUFFER_SIZE];    //接受缓冲区的字符
+u16 end,start;                     //接受缓冲区的使用情况
 
 /*******************************************************************************
  * 函数名称 : sendChar
@@ -59,6 +50,129 @@ void sendString(unsigned char *str, int len) {
 	for (i = 0; i < len; i++) {
 		sendChar(str[i]);
 	}
+}
+
+
+/*******************************************************************************
+ * 函数名称 : sendNewLine
+ * 函数介绍 : 发送换行符
+ * 参数介绍 : 无
+ * 返回值  :  无
+ ******************************************************************************/
+void sendNewLine()
+{
+	sendString((unsigned char *)"\r\n",2);
+}
+
+
+/*******************************************************************************
+ * 函数名称 : readChar
+ * 函数介绍 : 读取字符
+ * 参数介绍 : ch  :  读取的字符存放位置
+ * 返回值  :  无
+ ******************************************************************************/
+char readChar()
+{
+	if(start != end)
+	{
+		char ch = USART_RX_BUF[start];
+		USART_RX_BUF[start] = 0;
+		start++;
+		if(start >= RX_BUFFER_SIZE)
+		{
+			start = 0;
+		}
+
+		return ch;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+/*******************************************************************************
+ * 函数名称 : readString
+ * 函数介绍 : 读取字符串
+ * 参数介绍 : str  :  读取字符串暂存的位置
+ * 			len  :   要读取的位数
+ * 返回值  :  正真读取的位数
+ ******************************************************************************/
+int readString(char * str, int len)
+{
+	char ch = 0;
+	int i = 0;
+	if(len <= 0)
+	{
+		return -1;
+	}
+	ch = readChar();
+	while( ch != 0 )
+	{
+		*(str+i) = ch;
+		i++;
+		if( i < len )
+		{
+			ch = readChar();
+		}
+		else
+		{
+			break;
+		}
+	}
+	return i;
+}
+
+
+/*******************************************************************************
+ * 函数名称 : readStringWait
+ * 函数介绍 : 阻塞读取字符串
+ * 参数介绍 : str  :  读取字符串暂存的位置
+ * 			len  :   将会读取的位数
+ * 返回值  :  无
+ ******************************************************************************/
+void readStringWait(char * str, int len)
+{
+	int i = 0;
+	while(i < len)
+	{
+		i += readString(str+i,len-i);
+	}
+}
+
+/*******************************************************************************
+ * 函数名称 : readStringRaw
+ * 函数介绍 : 阻塞读取一行，或者用户能存储的最大字符串
+ * 参数介绍 : str  :  读取字符串暂存的位置
+ * 			len  :   将会读取的位数
+ * 返回值  :  无
+ ******************************************************************************/
+int readStringRaw(char * str, int len)
+{
+	int i = 0;
+	char ch = 0;
+	if(len <= 0)
+	{
+		return -1;
+	}
+
+	ch = readChar();
+	while( (i < len)  &&  !( (i > 0) && (str[i-1] == 0x0d) && (str[i] != 0x0a)) )
+	{
+		if(ch != 0)
+		{
+			*(str+i) = ch;
+			i++;
+			ch = readChar();
+		}
+		else
+		{
+			ch = readChar();
+		}
+	}
+	str[i] = '\0';
+
+	return i;
 }
 
 /*******************************************************************************
@@ -109,33 +223,47 @@ void uart_init(u32 bound) {
 	USART_Cmd(USART1, ENABLE);                     //使能USART1
 }
 
+
+/*******************************************************************************
+ * 函数名称 : USART1_IRQHandler
+ * 函数介绍 : 串口中断服务函数
+ * 参数介绍 : 无
+ * 返回值   :无
+ ******************************************************************************/
 void USART1_IRQHandler(void) {
-	u8 Res;
-
-	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
-		Res = USART_ReceiveData(USART1);
-
-		if ((USART_RX_STA & 0x8000) == 0) {
-			if (USART_RX_STA & 0x4000) {
-				if (Res != 0x0a)
-					USART_RX_STA = 0;
-				else
-					USART_RX_STA |= 0x8000;
-			} else {
-				if (Res == 0x0d)
-					USART_RX_STA |= 0x4000;
-				else {
-					USART_RX_BUF[USART_RX_STA & 0X3FFF] = Res;  //将Res存入缓冲区
-					USART_RX_STA++;                             //个数加1
-					//如果一读取数据超过缓冲区大小,就清空缓冲区,其实就是将下一个字节的存放位
-					//置指向0
-					if (USART_RX_STA > (USART_REC_LEN - 1))
-						USART_RX_STA = 0;
-				}
-			}
-		}
-	}
+	if(end >= RX_BUFFER_SIZE )
+		end = 0;
+	USART_RX_BUF[end++] = USART_ReceiveData(USART1);
 }
+
+
+
+
+
+/*******************************************************************************
+ * 一下代码是为了使用newlib的printf而添加的函数，这些宏定义是为了告诉下面代码使用哪一个串口
+ ******************************************************************************/
+
+
+//重载fputc函数
+#ifdef __GNUC__
+/* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
+   set to 'Yes') calls __io_putchar() */
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
+
+extern PUTCHAR_PROTOTYPE;
+PUTCHAR_PROTOTYPE {
+	/* Place your implementation of fputc here */
+	USART_SendData(USART1, (uint8_t) ch);
+	/* Loop until the end of transmission */
+	while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET) {
+	}
+	return ch;
+}
+
 
 #ifndef STDOUT_USART
 #define STDOUT_USART 1
@@ -163,6 +291,10 @@ char **environ = __env;
 int _write(int file, char *ptr, int len);
 
 void _exit(int status) {
+	//消除参数未使用的警告_start
+	status = status + 1;
+	status = status - 1;
+	//消除参数未使用的警告_end
 	_write(1, "exit", 4);
 	while (1) {
 		;
@@ -170,6 +302,10 @@ void _exit(int status) {
 }
 
 int _close(int file) {
+	//消除参数未使用的警告_start
+	file = file + 1;
+	file = file - 1;
+	//消除参数未使用的警告_end
 	return -1;
 }
 /*
@@ -177,6 +313,14 @@ int _close(int file) {
  Transfer control to a new process. Minimal implementation (for a system without processes):
  */
 int _execve(char *name, char **argv, char **env) {
+	//消除参数未使用的警告_start
+	name = name + 1;
+	name = name - 1;
+	argv = argv + 1;
+	argv = argv - 1;
+	env  = env + 1;
+	env  = env - 1;
+	//消除参数未使用的警告_end
 	errno = ENOMEM;
 	return -1;
 }
@@ -196,6 +340,10 @@ int _fork() {
  The `sys/stat.h' header file required is distributed in the `include' subdirectory for this C library.
  */
 int _fstat(int file, struct stat *st) {
+	//消除参数未使用的警告_start
+	file = file + 1;
+	file = file - 1;
+	//消除参数未使用的警告_end
 	st->st_mode = S_IFCHR;
 	return 0;
 }
@@ -231,6 +379,13 @@ int _isatty(int file) {
  Send a signal. Minimal implementation:
  */
 int _kill(int pid, int sig) {
+	//消除参数未使用的警告_start
+	pid = pid + 1;
+	pid = pid - 1;
+	sig = sig + 1;
+	sig = sig - 1;
+	//消除参数未使用的警告_end
+
 	errno = EINVAL;
 	return (-1);
 }
@@ -241,6 +396,12 @@ int _kill(int pid, int sig) {
  */
 
 int _link(char *old, char *new) {
+	//消除参数未使用的警告_start
+	old = old + 1;
+	old = old - 1;
+	new = new + 1;
+	new = new - 1;
+	//消除参数未使用的警告_end
 	errno = EMLINK;
 	return -1;
 }
@@ -250,6 +411,14 @@ int _link(char *old, char *new) {
  Set position in a file. Minimal implementation:
  */
 int _lseek(int file, int ptr, int dir) {
+	//消除参数未使用的警告_start
+	file = file + 1;
+	file = file - 1;
+	ptr = ptr + 1;
+	ptr = ptr - 1;
+	dir = dir + 1;
+	dir = dir - 1;
+	//消除参数未使用的警告_end
 	return 0;
 }
 
@@ -330,6 +499,12 @@ int _read(int file, char *ptr, int len) {
  */
 
 int _stat(const char *filepath, struct stat *st) {
+	//消除参数未使用的警告_start
+	filepath = filepath + 1;
+	filepath = filepath - 1;
+	st = st + 1;
+	st = st - 1;
+	//消除参数未使用的警告_end
 	st->st_mode = S_IFCHR;
 	return 0;
 }
@@ -340,6 +515,10 @@ int _stat(const char *filepath, struct stat *st) {
  */
 
 clock_t _times(struct tms *buf) {
+	//消除参数未使用的警告_start
+	buf = buf + 1;
+	buf = buf - 1;
+	//消除参数未使用的警告_end
 	return -1;
 }
 
@@ -348,6 +527,10 @@ clock_t _times(struct tms *buf) {
  Remove a file's directory entry. Minimal implementation:
  */
 int _unlink(char *name) {
+	//消除参数未使用的警告_start
+	name = name + 1;
+	name = name - 1;
+	//消除参数未使用的警告_end
 	errno = ENOENT;
 	return -1;
 }
@@ -357,6 +540,10 @@ int _unlink(char *name) {
  Wait for a child process. Minimal implementation:
  */
 int _wait(int *status) {
+	//消除参数未使用的警告_start
+	status = status + 1;
+	status = status - 1;
+	//消除参数未使用的警告_end
 	errno = ECHILD;
 	return -1;
 }
