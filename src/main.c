@@ -54,7 +54,6 @@
 
 int main(void)
 {
-	unsigned char key;
 	char str[100];
 	int len = 0;
 	timer_init(); //初始化系统滴答定时器
@@ -68,17 +67,6 @@ int main(void)
 	LCD_ShowString(30, 130, 200, 12, 12, (u8*) "2016/10/05");
 	while (1)
 	{
-		key = key_scan();
-		if (key == 2)
-		{
-			led_toggle(0);
-		}
-
-		if (key == 3)
-		{
-			led_toggle(1);
-		}
-
 		len = readStringRaw(str,100);
 		printf("%s, %d\n",str,len);
 	}

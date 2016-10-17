@@ -1,6 +1,7 @@
 #ifndef __KEY_H_
 #define __KEY_H_
 #include "PIN.h"
+#include "Led.h"
 #include "Timer.h"
 #include "stm32f10x.h"
 #include "stm32f10x_conf.h"
