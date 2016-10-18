@@ -2,7 +2,7 @@
 #define __KEY_H_
 #include "PIN.h"
 #include "Led.h"
-#include "Timer.h"
+#include "Delay.h"
 #include "stm32f10x.h"
 #include "stm32f10x_conf.h"
 #define KEY2  GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)

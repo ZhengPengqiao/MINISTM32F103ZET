@@ -5,6 +5,7 @@
 
 // ----------------------------------------------------------------------------
 
+#include <Delay.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +15,7 @@
 #include "Lcd.h"
 #include "usart.h"
 #include "Key.h"
-#include "Timer.h"
+#include "PWM.h"
 // ----------------------------------------------------------------------------
 //
 // Standalone STM32F1 led blink sample (trace via DEBUG).
@@ -54,9 +55,8 @@
 
 int main(void)
 {
-	char str[100];
-	int len = 0;
-	timer_init(); //初始化系统滴答定时器
+	int i;
+	delay_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
 	LCD_Init();  //初始化LCD
 	key_init();
@@ -65,10 +65,19 @@ int main(void)
 	LCD_ShowString(30, 70, 200, 16, 16, (u8*) "TFTLCD TEST");
 	LCD_ShowString(30, 90, 200, 16, 16, (u8*) "Look Here");
 	LCD_ShowString(30, 130, 200, 12, 12, (u8*) "2016/10/05");
+
 	while (1)
 	{
-		len = readStringRaw(str,100);
-		printf("%s, %d\n",str,len);
+		for(i = 0; i < 1000; i++)
+		{
+			Timer3PWMInit(1000,i);
+			delay_ms(2);
+		}
+		for(i = 0; i < 1000; i++)
+		{
+			Timer3PWMInit(1000,1000-i);
+			delay_ms(2);
+		}
 	}
 }
 
