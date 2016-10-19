@@ -13,6 +13,8 @@
 #include "stm32f10x_conf.h"
 #include "Led.h"
 #include "Lcd.h"
+#include "math.h"
+#include "touch.h"
 #include "usart.h"
 #include "Key.h"
 #include "PWM.h"
@@ -53,32 +55,32 @@
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-int main(void)
-{
-	int i;
+
+int main(void) {
+	int oldx = 0, oldy = 0;
+	int status = 0;
 	delay_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
 	LCD_Init();  //初始化LCD
 	key_init();
 	uart_init(115200);
-	LCD_ShowString(30, 40, 210, 24, 24, (u8*) "hello world");
-	LCD_ShowString(30, 70, 200, 16, 16, (u8*) "TFTLCD TEST");
-	LCD_ShowString(30, 90, 200, 16, 16, (u8*) "Look Here");
-	LCD_ShowString(30, 130, 200, 12, 12, (u8*) "2016/10/05");
+	tp_dev.init();
+	while (1) {
+		tp_dev.scan(0);
 
-	while (1)
-	{
-		for(i = 0; i < 1000; i++)
-		{
-			Timer3PWMInit(1000,i);
-			delay_ms(2);
-		}
-		for(i = 0; i < 1000; i++)
-		{
-			Timer3PWMInit(1000,1000-i);
-			delay_ms(2);
+		if ((tp_dev.sta) & (1 << 7)) {
+			if (status == 0) {
+				oldx = tp_dev.x;
+				oldy = tp_dev.y;
+				status = 1;
+			} else {
+				LCD_DrawLine(oldx, oldy, tp_dev.x, tp_dev.y);
+				oldx = tp_dev.x;
+				oldy = tp_dev.y;
+			}
 		}
 	}
+
 }
 
 #pragma GCC diagnostic pop
