@@ -18,6 +18,10 @@
 #include "usart.h"
 #include "Key.h"
 #include "PWM.h"
+#include "Delay.h"
+#include "mpu6050.h"
+#include "inv_mpu.h"
+#include "inv_mpu_dmp_motion_driver.h"
 // ----------------------------------------------------------------------------
 //
 // Standalone STM32F1 led blink sample (trace via DEBUG).
@@ -55,130 +59,166 @@
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-int event_id = 0;
-//绘制出画图板
-void draw_plan() {
-	LCD_Clear(WHITE);
-	LCD_Fill(0, 0, 20, 30, BLACK);
-	LCD_Fill(20, 0, 40, 30, BLUE);
-	LCD_Fill(40, 0, 60, 30, BRED);
-	LCD_Fill(60, 0, 80, 30, GRED);
-	LCD_Fill(80, 0, 100, 30, GBLUE);
-	LCD_Fill(100, 0, 120, 30, RED);
-	LCD_Fill(120, 0, 140, 30, MAGENTA);
-	LCD_Fill(140, 0, 160, 30, GREEN);
-	LCD_Fill(160, 0, 180, 30, CYAN);
-	LCD_Fill(180, 0, 200, 30, YELLOW);
-	LCD_Fill(200, 0, 220, 30, BROWN);
-	LCD_DrawRectangle(220, 0, 240, 30);
-	POINT_COLOR = BLACK;
-	LCD_ShowString(223, 5, 20, 25, 16, (u8 *) "RE");
-	LCD_DrawRectangle(0, 30, 240, 60);
-	LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:BLACK");
-	LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:BLACK");
-}
 
-void event_msg() {
-	if ((tp_dev.sta) & (1 << 7)) {  //触摸屏被按下
-		if ( (tp_dev.y < 30) && (tp_dev.y >= 0) ) {
-			event_id = tp_dev.x / 20 + 1;
-		} else if ((tp_dev.y < 60) && (tp_dev.y >= 30)) {
-			event_id = 13;
-		} else {
-			event_id = 14;
-		}
-	}
+//串口1发送1个字符
+//c:要发送的字符
+void usart1_send_char(u8 c)
+{
+	while(USART_GetFlagStatus(USART1,USART_FLAG_TC)==RESET); //循环发送,直到发送完毕
+	USART_SendData(USART1,c);
 }
-
+//传送数据给匿名四轴上位机软件(V2.6版本)
+//fun:功能字. 0XA0~0XAF
+//data:数据缓存区,最多28字节!!
+//len:data区有效数据个数
+void usart1_niming_report(u8 fun,u8*data,u8 len)
+{
+	u8 send_buf[32];
+	u8 i;
+	if(len>28)return;	//最多28字节数据
+	send_buf[len+3]=0;	//校验数置零
+	send_buf[0]=0X88;	//帧头
+	send_buf[1]=fun;	//功能字
+	send_buf[2]=len;	//数据长度
+	for(i=0;i<len;i++)send_buf[3+i]=data[i];			//复制数据
+	for(i=0;i<len+3;i++)send_buf[len+3]+=send_buf[i];	//计算校验和
+	for(i=0;i<len+4;i++)usart1_send_char(send_buf[i]);	//发送数据到串口1
+}
+//发送加速度传感器数据和陀螺仪数据
+//aacx,aacy,aacz:x,y,z三个方向上面的加速度值
+//gyrox,gyroy,gyroz:x,y,z三个方向上面的陀螺仪值
+void mpu6050_send_data(short aacx,short aacy,short aacz,short gyrox,short gyroy,short gyroz)
+{
+	u8 tbuf[12];
+	tbuf[0]=(aacx>>8)&0XFF;
+	tbuf[1]=aacx&0XFF;
+	tbuf[2]=(aacy>>8)&0XFF;
+	tbuf[3]=aacy&0XFF;
+	tbuf[4]=(aacz>>8)&0XFF;
+	tbuf[5]=aacz&0XFF;
+	tbuf[6]=(gyrox>>8)&0XFF;
+	tbuf[7]=gyrox&0XFF;
+	tbuf[8]=(gyroy>>8)&0XFF;
+	tbuf[9]=gyroy&0XFF;
+	tbuf[10]=(gyroz>>8)&0XFF;
+	tbuf[11]=gyroz&0XFF;
+	usart1_niming_report(0XA1,tbuf,12);//自定义帧,0XA1
+}
+//通过串口1上报结算后的姿态数据给电脑
+//aacx,aacy,aacz:x,y,z三个方向上面的加速度值
+//gyrox,gyroy,gyroz:x,y,z三个方向上面的陀螺仪值
+//roll:横滚角.单位0.01度。 -18000 -> 18000 对应 -180.00  ->  180.00度
+//pitch:俯仰角.单位 0.01度。-9000 - 9000 对应 -90.00 -> 90.00 度
+//yaw:航向角.单位为0.1度 0 -> 3600  对应 0 -> 360.0度
+void usart1_report_imu(short aacx,short aacy,short aacz,short gyrox,short gyroy,short gyroz,short roll,short pitch,short yaw)
+{
+	u8 tbuf[28];
+	u8 i;
+	for(i=0;i<28;i++)tbuf[i]=0;//清0
+	tbuf[0]=(aacx>>8)&0XFF;
+	tbuf[1]=aacx&0XFF;
+	tbuf[2]=(aacy>>8)&0XFF;
+	tbuf[3]=aacy&0XFF;
+	tbuf[4]=(aacz>>8)&0XFF;
+	tbuf[5]=aacz&0XFF;
+	tbuf[6]=(gyrox>>8)&0XFF;
+	tbuf[7]=gyrox&0XFF;
+	tbuf[8]=(gyroy>>8)&0XFF;
+	tbuf[9]=gyroy&0XFF;
+	tbuf[10]=(gyroz>>8)&0XFF;
+	tbuf[11]=gyroz&0XFF;
+	tbuf[18]=(roll>>8)&0XFF;
+	tbuf[19]=roll&0XFF;
+	tbuf[20]=(pitch>>8)&0XFF;
+	tbuf[21]=pitch&0XFF;
+	tbuf[22]=(yaw>>8)&0XFF;
+	tbuf[23]=yaw&0XFF;
+	usart1_niming_report(0XAF,tbuf,28);//飞控显示帧,0XAF
+}
 int main(void) {
-	int oldx = 0, oldy = 0;
-	int status = 0;
+	u8 t=0,report=1;			//默认开启上报
+	float pitch,roll,yaw; 		//欧拉角
+	short aacx,aacy,aacz;		//加速度传感器原始数据
+	short gyrox,gyroy,gyroz;	//陀螺仪原始数据
+	short temp;					//温度
 	delay_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
 	LCD_Init();  //初始化LCD
 	key_init();
 	uart_init(115200);
 
-	POINT_COLOR = BLUE;
-	LCD_ShowString(30, 30, 210, 50, 16, (u8 *) "you can drawing>_<");
-	LCD_ShowString(30, 80, 210, 50, 16, (u8 *) "(*'_'*)good luck");
-	delay_ms(2000);
-	tp_dev.init();
-	draw_plan();
-	while (1) {
-		tp_dev.scan(0);
-		event_msg();  //将坐标转化为事件
-		switch (event_id) {
-		case 1:
-			POINT_COLOR = BLACK;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:BLACK  ");
-			break;
-		case 2:
-			POINT_COLOR = BLUE;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:BLUE   ");
-			break;
-		case 3:
-			POINT_COLOR = BRED;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:BRED   ");
-			break;
-		case 4:
-			POINT_COLOR = GRED;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:GRED   ");
-			break;
-		case 5:
-			POINT_COLOR = GBLUE;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:GBLUE  ");
-			break;
-		case 6:
-			POINT_COLOR = RED;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:RED    ");
-			break;
-		case 7:
-			POINT_COLOR = MAGENTA;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:MAGENTA");
-			break;
-		case 8:
-			POINT_COLOR = GREEN;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:GREEN  ");
-			break;
-		case 9:
-			POINT_COLOR = CYAN;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:CYAN   ");
-			break;
-		case 10:
-			POINT_COLOR = YELLOW;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:YELLOW ");
-			break;
-		case 11:
-			POINT_COLOR = BROWN;
-			LCD_ShowString(0, 35, 100, 25, 16, (u8 *) "Color:BROWN  ");
-			break;
-		case 12:
-			LCD_Fill(0, 61, lcddev.width, lcddev.height, WHITE);
-			break;  //点击了RT
-		case 14:
-			if (status == 0) {
-				oldx = tp_dev.x;
-				oldy = tp_dev.y;
-				status = 1;
-			} else {
-				LCD_DrawLine(oldx, oldy, tp_dev.x, tp_dev.y);
-				oldx = tp_dev.x;
-				oldy = tp_dev.y;
-			}
-			break;
-		default:break;
-		}
-		event_id = 0;
-		 //如果触摸屏松开，就标记下次画的时候，要重新记录起点
-		if ( !((tp_dev.sta) & (1 << 7)) ) {
-			oldx = 0;
-			oldy = 0;
-			status = 0;
-		}
-		delay_ms(10);
-	}
 
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	 //设置NVIC中断分组2:2位抢占优先级，2位响应优先级
+	MPU_Init();					//初始化MPU6050
+ 	POINT_COLOR=RED;			//设置字体为红色
+	LCD_ShowString(30,50,200,16,16,(u8*)"WarShip STM32");
+	LCD_ShowString(30,70,200,16,16,(u8*)"MPU6050 TEST");
+	LCD_ShowString(30,90,200,16,16,(u8*)"ATOM@ALIENTEK");
+	LCD_ShowString(30,110,200,16,16,(u8*)"2015/1/17");
+	while(mpu_dmp_init())
+ 	{
+		LCD_ShowString(30,130,200,16,16,(u8*)"MPU6050 Error");
+		delay_ms(200);
+		LCD_Fill(30,130,239,130+16,WHITE);
+ 		delay_ms(200);
+	}
+	LCD_ShowString(30,130,200,16,16,(u8*)"MPU6050 OK");
+	LCD_ShowString(30,150,200,16,16,(u8*)"KEY0:UPLOAD ON/OFF");
+	POINT_COLOR=BLUE;//设置字体为蓝色
+ 	LCD_ShowString(30,170,200,16,16,(u8*)"UPLOAD ON ");
+ 	LCD_ShowString(30,200,200,16,16,(u8*)" Temp:    . C");
+ 	LCD_ShowString(30,220,200,16,16,(u8*)"Pitch:    . C");
+ 	LCD_ShowString(30,240,200,16,16,(u8*)" Roll:    . C");
+ 	LCD_ShowString(30,260,200,16,16,(u8*)" Yaw :    . C");
+ 	while(1)
+	{
+
+		if(mpu_dmp_get_data(&pitch,&roll,&yaw)==0)
+		{
+			temp=MPU_Get_Temperature();	//得到温度值
+			MPU_Get_Accelerometer(&aacx,&aacy,&aacz);	//得到加速度传感器数据
+			MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);	//得到陀螺仪数据
+			if(report)mpu6050_send_data(aacx,aacy,aacz,gyrox,gyroy,gyroz);//用自定义帧发送加速度和陀螺仪原始数据
+			if(report)usart1_report_imu(aacx,aacy,aacz,gyrox,gyroy,gyroz,(int)(roll*100),(int)(pitch*100),(int)(yaw*10));
+			if((t%10)==0)
+			{
+				if(temp<0)
+				{
+					LCD_ShowChar(30+48,200,'-',16,0);		//显示负号
+					temp=-temp;		//转为正数
+				}else LCD_ShowChar(30+48,200,' ',16,0);		//去掉负号
+				LCD_ShowNum(30+48+8,200,temp/100,3,16);		//显示整数部分
+				LCD_ShowNum(30+48+40,200,temp%10,1,16);		//显示小数部分
+				temp=pitch*10;
+				if(temp<0)
+				{
+					LCD_ShowChar(30+48,220,'-',16,0);		//显示负号
+					temp=-temp;		//转为正数
+				}else LCD_ShowChar(30+48,220,' ',16,0);		//去掉负号
+				LCD_ShowNum(30+48+8,220,temp/10,3,16);		//显示整数部分
+				LCD_ShowNum(30+48+40,220,temp%10,1,16);		//显示小数部分
+				temp=roll*10;
+				if(temp<0)
+				{
+					LCD_ShowChar(30+48,240,'-',16,0);		//显示负号
+					temp=-temp;		//转为正数
+				}else LCD_ShowChar(30+48,240,' ',16,0);		//去掉负号
+				LCD_ShowNum(30+48+8,240,temp/10,3,16);		//显示整数部分
+				LCD_ShowNum(30+48+40,240,temp%10,1,16);		//显示小数部分
+				temp=yaw*10;
+				if(temp<0)
+				{
+					LCD_ShowChar(30+48,260,'-',16,0);		//显示负号
+					temp=-temp;		//转为正数
+				}else LCD_ShowChar(30+48,260,' ',16,0);		//去掉负号
+				LCD_ShowNum(30+48+8,260,temp/10,3,16);		//显示整数部分
+				LCD_ShowNum(30+48+40,260,temp%10,1,16);		//显示小数部分
+				t=0;
+				led_toggle(0);
+			}
+		}
+		t++;
+	}
 }
 
 #pragma GCC diagnostic pop
