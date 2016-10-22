@@ -46,6 +46,11 @@
 #define SDIO_FIFO_ADDRESS                ((uint32_t)0x40018080)
 
 
+
+#define SD_DETECT_PIN                    GPIO_Pin_7                 /* PC.7 */
+#define SD_DETECT_GPIO_PORT              GPIOD                       /* GPIOD */
+#define SD_DETECT_GPIO_CLK               RCC_APB2Periph_GPIOD
+
 #define SD_SDIO_DMA                      DMA2
 #define SD_SDIO_DMA_CLK                  RCC_AHBPeriph_DMA2
 #define SD_SDIO_DMA_CHANNEL              DMA2_Channel4
@@ -225,10 +230,10 @@ typedef struct
 {
   SD_CSD SD_csd;
   SD_CID SD_cid;
-  uint32_t CardCapacity;  /*!< Card Capacity */
-  uint32_t CardBlockSize; /*!< Card Block Size */
+  uint32_t CardCapacity;  /*!< 卡容量 */
+  uint32_t CardBlockSize; /*!< 块的大小 */
   uint16_t RCA;
-  uint8_t CardType;
+  uint8_t CardType;   //卡的类型
 } SD_CardInfo;
 
 /**
@@ -241,6 +246,7 @@ typedef struct
 
 /**
   * @brief SDIO Commands  Index
+  * SD卡的命令索引
   */
 #define SD_CMD_GO_IDLE_STATE                       ((uint8_t)0)
 #define SD_CMD_SEND_OP_COND                        ((uint8_t)1)
@@ -291,7 +297,9 @@ typedef struct
 
 /**
   * @brief Following commands are SD Card Specific commands.
+  * 		下面的命令时SD卡的特殊的命令
   *        SDIO_APP_CMD should be sent before sending these commands.
+  *        在发送这些指令的时候应该先发送SDIO_APP_CMD（CMD55）
   */
 #define SD_CMD_APP_SD_SET_BUSWIDTH                 ((uint8_t)6)  /*!< For SD Card only */
 #define SD_CMD_SD_APP_STAUS                        ((uint8_t)13) /*!< For SD Card only */
@@ -304,7 +312,9 @@ typedef struct
 
 /**
   * @brief Following commands are SD Card Specific security commands.
+  *        下面指令使SD卡特殊的安全指令
   *        SDIO_APP_CMD should be sent before sending these commands.
+  *        在发送这些指令的时候应该先发送SDIO_APP_CMD（CMD55）
   */
 #define SD_CMD_SD_APP_GET_MKB                      ((uint8_t)43) /*!< For SD Card only */
 #define SD_CMD_SD_APP_GET_MID                      ((uint8_t)44) /*!< For SD Card only */
@@ -377,8 +387,6 @@ SD_Error SD_ProcessIRQSrc(void);
 SD_Error SD_WaitReadOperation(void);
 SD_Error SD_WaitWriteOperation(void);
 
-
-
 /*
  * 函数名称 ： SD_ReadDisk
  * 函数介绍 ：读SD卡
@@ -398,6 +406,8 @@ extern u8 SD_ReadDisk(u8*buf, u32 sector, u8 cnt);
  * 返回值    ： 错误状态， 0： 正常，  其他：错误代码
  */
 extern u8 SD_WriteDisk(u8*buf, u32 sector, u8 cnt);
+
+extern void SDIO_IRQHandler();
 #ifdef __cplusplus
 }
 #endif

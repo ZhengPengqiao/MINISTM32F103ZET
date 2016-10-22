@@ -57,22 +57,33 @@ void EXTI0_IRQHandler(void) {
 	u8 buf[1024];
 	int sd_size;
 	int status;
+	int i;
 	if (EXTI_GetITStatus(EXTI_Line0) != RESET) {
+		//短暂延时，然后查看引脚状态，防止干扰
+		//向内存卡写入数据
+		for(i = 0; i < 100000; i++);
+		if(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0) == 1)
+		{
 
-		status = SD_ReadDisk(buf, 0, 2);
-		if (status == SD_OK) {
-			LCD_ShowString(30, 190, 200, 16, 16,
-					(u8*) "USART1 Sending Data...");
-			printf("SECTOR 0 DATA:\r\n");
+/*====按键用户处理部分          ==========================================================*/
+			status = SD_ReadDisk(buf, 0, 2);
 
-			/*将数据输出*/
-			for (sd_size = 0; sd_size < 1024; sd_size++)
-			printf("%x ", buf[sd_size]);
-			printf("\r\nDATA ENDED\r\n");
-			LCD_ShowString(30, 190, 200, 16, 16,
-					(u8*) "USART1 Send Data Over!");
+			if (status == SD_OK) {
+				LCD_ShowString(30, 190, 200, 16, 16,
+						(u8*) "USART1 Sending Data...");
+				printf("SECTOR 0 DATA:\r\n");
+
+				/*将数据输出到串口*/
+				for (sd_size = 0; sd_size < 1024; sd_size++)
+				printf("%x ", buf[sd_size]);
+				printf("\r\nDATA ENDED\r\n");
+				LCD_ShowString(30, 190, 200, 16, 16,
+						(u8*) "USART1 Send Data Over!");
+			}
+/*====按键用户处理部分结束位置      ======================================================*/
+
+
 		}
-
 		EXTI_ClearITPendingBit(EXTI_Line0);
 	}
 }
@@ -83,26 +94,34 @@ void EXTI4_IRQHandler(void) {
 	int sd_size;
 	int status;
 	int i;
-	static int val = 0;
+	static int val = 1;
 	if (EXTI_GetITStatus(EXTI_Line4) != RESET) {
 
 		//短暂延时，然后查看引脚状态，防止干扰
 		//向内存卡写入数据
 		for(i = 0; i < 100000; i++);
+
 		if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_4) == 0)
 		{
+
+
+/*==== 按键用户处理部分     ==========================================================*/
 			//初始化数组
 			for (sd_size = 0; sd_size < 1024; sd_size++)
 			{
-				buf[sd_size] = val++;
+				buf[sd_size] = val;
 			}
+			val++;
 			//将数据写入到分区
-			status = SD_WriteDisk(buf, 0, 2);
+			status = SD_WriteDisk(buf, 0, 1);
+
 			if (status == SD_OK) {
 				LCD_ShowString(30, 230, 200, 16, 16, (u8*) "write OK");
 			}
 
 			led_toggle(1);
+/*====  按键用户处理部分结束位置      ====================================================*/
+
 		}
 		EXTI_ClearITPendingBit(EXTI_Line4);
 	}

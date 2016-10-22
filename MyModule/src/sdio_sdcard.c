@@ -7,51 +7,63 @@
  * @brief   This file provides a set of functions needed to manage the SDIO SD
  *          Card memory mounted on STM32xx-EVAL board (refer to stm32_eval.h
  *          to know about the boards supporting this memory).
+ *          中文翻译：这个文件为STM32xx-EVAL板子提供了一系列的用于管理SDIO SD卡的函数stm32_eval.h文件不仅仅
+ *          包含了SD卡的相关信息，而且还有Flash,LED,SPI灯，sd卡只是其中的一部分
  *
  *
  *  @verbatim
  *
  *          ===================================================================
- *                                   How to use this driver
+ *                                   How to use this driver（如何使用这个驱动）
  *          ===================================================================
  *          It implements a high level communication layer for read and write
  *          from/to this memory. The needed STM32 hardware resources (SDIO and
  *          GPIO) are defined in stm32xx_eval.h file, and the initialization is
  *          performed in SD_LowLevel_Init() function declared in stm32xx_eval.c
  *          file.
+ *			中文翻译：它充当一个用于对内存读写的高层的交流层，它需要STM32硬件资源（SDIO控制器，和GPIO引脚）
+ *			的支持。初始化函数是定义在stm32xx_eval.c文件中的SD_LowLevel_Init()函数。
  *          You can easily tailor this driver to any other development board,
  *          by just adapting the defines for hardware resources and
  *          SD_LowLevel_Init() function.
+ *          中文翻译：你可以很容易的移植这个驱动到其他的任何开发板，你仅仅需要提供硬件资源的定义和初始化函数
+ *          SD_LowLevel_Init()的编写。
  *
  *          A - SD Card Initialization and configuration
+ *			中文翻译：SD卡初始化函数和配置
  *          ============================================
  *            - To initialize the SD Card, use the SD_Init() function.  It
  *              Initializes the SD Card and put it into StandBy State (Ready
  *              for data transfer). This function provide the following operations:
- *
+ *				中文翻译：使用SD_Init()函数进行SD卡的初始化，它初始化SD并将SD卡配置到待命的状态（准备数据
+ *				的传输）。这个函数提供了下面的操作：
  *              1 - Apply the SD Card initialization process at 400KHz and check
  *                  the SD Card type (Standard Capacity or High Capacity). You
  *                  can change or adapt this frequency by adjusting the
  *                  "SDIO_INIT_CLK_DIV" define inside the stm32xx_eval.h file.
  *                  The SD Card frequency (SDIO_CK) is computed as follows:
- *
+ *					中文翻译：在400KHz的频率下执行SD卡的初始化并且检查SD卡的类型（标准容量还是大容量）,你
+ *					可以你可以通过stm32xx_eval.h文件中的"SDIO_INIT_CLK_DIV"宏定义来设置合适的
+ *					频率。这个SD卡频率的计算如下：
  *                     +---------------------------------------------+
  *                     | SDIO_CK = SDIOCLK / (SDIO_INIT_CLK_DIV + 2) |
  *                     +---------------------------------------------+
  *
  *                  In initialization mode and according to the SD Card standard,
  *                  make sure that the SDIO_CK frequency don't exceed 400KHz.
- *
+ *   				 中文翻译：在初始化模式时，并且根据SD卡的标准，应确定这个SDIO_CK的频率在400KHz内，
  *              2 - Get the SD CID and CSD data. All these information are
  *                  managed by the SDCardInfo structure. This structure provide
  *                  also ready computed SD Card capacity and Block size.
- *
+ *              中文翻译：得到SD的CID和CSD数据，所有的信息都在SDCardInfo结构体中管理着，这个结构体也
+ *              提供了SD卡的容量和块大小
  *              3 - Configure the SD Card Data transfer frequency. By Default,
  *                  the card transfer frequency is set to 24MHz. You can change
  *                  or adapt this frequency by adjusting the "SDIO_TRANSFER_CLK_DIV"
  *                  define inside the stm32xx_eval.h file.
  *                  The SD Card frequency (SDIO_CK) is computed as follows:
- *
+ *              中文翻译：配置SD卡数据传输频率，默认的SD卡传输频率为24MHz,你可通过定义在文件stm32xx_eval.h
+ *                     中的SDIO_TRANSFER_CLK_DIV宏定义设置合适的频率
  *                     +---------------------------------------------+
  *                     | SDIO_CK = SDIOCLK / (SDIO_INIT_CLK_DIV + 2) |
  *                     +---------------------------------------------+
@@ -62,62 +74,86 @@
  *                  To be able to use a frequency higher than 24MHz, you should
  *                  use the SDIO peripheral in bypass mode. Refer to the
  *                  corresponding reference manual for more details.
- *
+ *              中文翻译：在传输模式的时候，依据SD卡的标准，应保证SDIO_CK的频率不超过25MHz和高速模式不
+ *                     超过50MHz.
  *              4 -  Select the corresponding SD Card according to the address
  *                   read with the step 2.
- *
+ *              中文翻译：选择合适的卡通过第二步结构体数据的读取
  *              5 -  Configure the SD Card in wide bus mode: 4-bits data.
- *
+ *              中文翻译：配置SD卡工作下宽总线模式（4bit数据）；
  *          B - SD Card Read operation
  *          ==========================
  *           - You can read SD card by using two function: SD_ReadBlock() and
  *             SD_ReadMultiBlocks() functions. These functions support only
  *             512-byte block length.
+ *             中文翻译：你可以使用SD_ReadBlock()和SD_ReadMultiBlocks()这两个函数进行读，这两个
+ *             函数仅仅支持块大小为512Bit的操作。
  *           - The SD_ReadBlock() function read only one block (512-byte). This
  *             function can transfer the data using DMA controller or using
  *             polling mode. To select between DMA or polling mode refer to
  *             "SD_DMA_MODE" or "SD_POLLING_MODE" inside the stm32_eval_sdio_sd.h
  *             file and uncomment the corresponding line. By default the SD DMA
  *             mode is selected
+ *             中文翻译：函数SD_ReadBlock()只读取一块，这个函数可以通过DMA控制器或者查询模式传输数据，
+ *                   通过取消文件stm32_eval_sdio_sd.h中的"SD_DMA_MODE"或者
+ *                   "SD_POLLING_MODE"宏定义行相应的注释来选择DMA控制器或者查询模式。默认是选择
+ *                   SD DMA模式的。
  *           - The SD_ReadMultiBlocks() function read only mutli blocks (multiple
  *             of 512-byte).
+ *             中文翻译：SD_ReadMultiBlocks()函数可以读取多块的数据（块大小应为512byte）。
  *           - Any read operation should be followed by two functions to check
  *             if the DMA Controller and SD Card status.
+ *             中文翻译：所有读操作应该使用下面两个函数去检查DMA控制器和SD状态。
  *              - SD_ReadWaitOperation(): this function insure that the DMA
  *                controller has finished all data transfer.
+ *               中文翻译：-SD_ReadWaitOperation():这个函数是确保DMA控制器已经结束所有数据的传输
  *              - SD_GetStatus(): to check that the SD Card has finished the
  *                data transfer and it is ready for data.
- *
+ *              中文翻译：-SD_GetStatus():检查SD是否已经结束数据的传输并且为数据的传输做好准备。
  *           - The DMA transfer is finished by the SDIO Data End interrupt. User
  *             has to call the SD_ProcessIRQ() function inside the SDIO_IRQHandler().
  *             Don't forget to enable the SDIO_IRQn interrupt using the NVIC controller.
- *
+ *			中文翻译：这个DMA传输是通过SDIO数据结束中断来结束的，用户必须在SDIO中断服务函数
+ *			       SDIO_IRQHandler()中调用 SD_ProcessIRQ()函数。不要忘记使用NVIC控制器
+ *			                    使能SDIO_IRQn的中断。
  *          C - SD Card Write operation
+ *          中文翻译：SD卡写操作
  *          ===========================
  *           - You can write SD card by using two function: SD_WriteBlock() and
  *             SD_WriteMultiBlocks() functions. These functions support only
  *             512-byte block length.
+ *             中文翻译：你可以通过SD_WriteBlock()和SD_WriteMultiBlocks()函数来进行SD卡的写操作，
+ *                   这两个函数仅仅支持大小为512byte的块。
  *           - The SD_WriteBlock() function write only one block (512-byte). This
  *             function can transfer the data using DMA controller or using
  *             polling mode. To select between DMA or polling mode refer to
  *             "SD_DMA_MODE" or "SD_POLLING_MODE" inside the stm32_eval_sdio_sd.h
  *             file and uncomment the corresponding line. By default the SD DMA
  *             mode is selected
+ *             中文翻译：函数SD_WriteBlock()仅仅写入一个块（块大小为512byte）.这个函数可以通过DMA模
+ *             式或者查询模式进行数据传输。你可以通过取消文件 stm32_eval_sdio_sd.h中的"SD_DMA_MODE"
+ *             或着"SD_POLLING_MODE"的行的注释来选择传输模式。默认是DMA模式。
  *           - The SD_WriteMultiBlocks() function write only mutli blocks (multiple
  *             of 512-byte).
+ *              中文翻译：SD_WriteMultiBlocks()函数读取多个块数据（块大小为512byte）
  *           - Any write operation should be followed by two functions to check
  *             if the DMA Controller and SD Card status.
+ *              中文翻译：所有写操作应该通过以下两个函数检查DMA控制器状态和SD卡状态
  *              - SD_ReadWaitOperation(): this function insure that the DMA
  *                controller has finished all data transfer.
+ *                中文翻译：SD_ReadWaitOperation()：这个函数确保DMA控制器已经结束所有数据的传输。
  *              - SD_GetStatus(): to check that the SD Card has finished the
  *                data transfer and it is ready for data.
- *
+ *              中文翻译： SD_GetStatus()：检查SD是否已经结束传输并为下次数据传输做准备。
  *           - The DMA transfer is finished by the SDIO Data End interrupt. User
  *             has to call the SD_ProcessIRQ() function inside the SDIO_IRQHandler().
  *             Don't forget to enable the SDIO_IRQn interrupt using the NVIC controller.
 
- *
+ *           中文翻译：这个DMA传输是通过SDIO数据结束中断来结束的，用户必须在SDIO中断服务函数
+ *			       SDIO_IRQHandler()中调用 SD_ProcessIRQ()函数。不要忘记使用NVIC控制器
+ *			                    使能SDIO_IRQn的中断。
  *          D - SD card status
+ *          中文翻译：SD卡状态
  *          ==================
  *           - At any time, you can check the SD Card status and get the SD card
  *             state by using the SD_GetStatus() function. This function checks
@@ -125,8 +161,11 @@
  *             SD Card transfer state.
  *           - You can also get the SD card SD Status register by using the
  *             SD_SendSDStatus() function.
- *
+ *          中文翻译：-在任何时间，你和检查SD卡的状态并且通过函数SD_GetStatus()得到SD卡的状态，这个函数首先
+ *          会检查这个SD卡是否还连接着，然后得到SD卡内部传输状态。
+ *          	   -你同样可以使用函数SD_SendSDStatus()得到SD卡状态寄存器的值
  *          E - Programming Model
+ *          中文翻译：编程示例
  *          =====================
  *             Status = SD_Init(); // Initialization Step as described in section A
  *
@@ -157,6 +196,7 @@
  *
  *
  *          STM32 SDIO Pin assignment
+ *          中文翻译：STM32 SDIO引脚的分配
  *          =========================
  *          +-----------------------------------------------------------+
  *          |                     Pin assignment                        |
@@ -223,7 +263,7 @@
  * @brief  SDIO Static flags, TimeOut, FIFO Address
  */
 
-__attribute((aligned (4)))  u8 SDIO_DATA_BUFFER[512];
+__attribute((aligned (4)))     u8 SDIO_DATA_BUFFER[512];
 #define NULL 0
 #define SDIO_STATIC_FLAGS               ((uint32_t)0x000005FF)
 #define SDIO_CMD0TIMEOUT                ((uint32_t)0x00010000)
@@ -341,37 +381,167 @@ uint8_t convert_from_bytes_to_power_of_two(uint16_t NumberOfBytes);
  * @}
  */
 
-/** @defgroup STM32_EVAL_SDIO_SD_Private_Functions
- * @{
+void SDIO_IRQHandler()
+{
+	SD_ProcessIRQSrc();
+}
+
+/**
+ * @brief  DeInitializes the SDIO interface.
+ * @param  None
+ * @retval None
  */
-void SD_LowLevel_Init() {
+void SD_LowLevel_DeInit(void) {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
-	//SDIO IO口初始化
+	/*!< Disable SDIO Clock */
+	SDIO_ClockCmd(DISABLE);
 
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD, ENABLE); //使能PORTC,PORTD时钟
+	/*!< Set Power State to OFF */
+	SDIO_SetPowerState(SDIO_PowerState_OFF);
 
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_SDIO | RCC_AHBPeriph_DMA2, ENABLE); //使能SDIO,DMA2时钟
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10
-			| GPIO_Pin_11 | GPIO_Pin_12;	//PC.8~12 复用输出
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; 		 //复用推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;		 //IO口速度为50MHz
-	GPIO_Init(GPIOC, &GPIO_InitStructure);					 //根据设定参数初始化PC.8~12
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;	//PD2 复用输出
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; 		 //复用推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;		 //IO口速度为50MHz
-	GPIO_Init(GPIOD, &GPIO_InitStructure);					 //根据设定参数初始化PD2
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;	//PD7 上拉输入
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; 		 //复用推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;		 //IO口速度为50MHz
-	GPIO_Init(GPIOD, &GPIO_InitStructure);					 //根据设定参数初始化PD7
-
-	//SDIO外设寄存器设置为默认值
+	/*!< DeInitializes the SDIO peripheral */
 	SDIO_DeInit();
+
+	/*!< Disable the SDIO AHB Clock */
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_SDIO, DISABLE);
+
+	/*!< Configure PC.08, PC.09, PC.10, PC.11, PC.12 pin: D0, D1, D2, D3, CLK pin */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10
+			| GPIO_Pin_11 | GPIO_Pin_12;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	/*!< Configure PD.02 CMD line */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+	GPIO_Init(GPIOD, &GPIO_InitStructure);
 }
+
+/**
+ * @brief  Initializes the SD Card and put it into StandBy State (Ready for
+ *         data transfer).
+ * @param  None
+ * @retval None
+ */
+void SD_LowLevel_Init(void) {
+	GPIO_InitTypeDef GPIO_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+	/*!< GPIOC and GPIOD Periph clock enable */
+	RCC_APB2PeriphClockCmd(
+			RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD | SD_DETECT_GPIO_CLK,
+			ENABLE);
+
+	/*!< Configure PC.08, PC.09, PC.10, PC.11, PC.12 pin: D0, D1, D2, D3, CLK pin */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10
+			| GPIO_Pin_11 | GPIO_Pin_12;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	/*!< Configure PD.02 CMD line */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+	GPIO_Init(GPIOD, &GPIO_InitStructure);
+
+	/*!< Configure SD_SPI_DETECT_PIN pin: SD Card detect pin */
+	GPIO_InitStructure.GPIO_Pin = SD_DETECT_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_Init(SD_DETECT_GPIO_PORT, &GPIO_InitStructure);
+
+	/*!< Enable the SDIO AHB Clock */
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_SDIO, ENABLE);
+
+	/*!< Enable the DMA2 Clock */
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA2, ENABLE);
+
+	NVIC_InitStructure.NVIC_IRQChannel = SDIO_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+}
+
+
+/**
+ * @brief  Configures the DMA2 Channel4 for SDIO Tx request.
+ * @param  BufferSRC: pointer to the source buffer
+ * @param  BufferSize: buffer size
+ * @retval None
+ */
+void SD_LowLevel_DMA_TxConfig(uint32_t *BufferSRC, uint32_t BufferSize) {
+
+	DMA_InitTypeDef DMA_InitStructure;
+
+	DMA_ClearFlag(
+			DMA2_FLAG_TC4 | DMA2_FLAG_TE4 | DMA2_FLAG_HT4 | DMA2_FLAG_GL4);
+
+	/*!< DMA2 Channel4 disable */
+	DMA_Cmd(DMA2_Channel4, DISABLE);
+
+	/*!< DMA2 Channel4 Config */
+	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) SDIO_FIFO_ADDRESS;
+	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) BufferSRC;
+	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
+	DMA_InitStructure.DMA_BufferSize = BufferSize / 4;
+	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
+	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
+	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+	DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+	DMA_Init(DMA2_Channel4, &DMA_InitStructure);
+
+	/*!< DMA2 Channel4 enable */
+	DMA_Cmd(DMA2_Channel4, ENABLE);
+}
+
+/**
+ * @brief  Configures the DMA2 Channel4 for SDIO Rx request.
+ *         配置DMA2的通道14用于SDIO的接收请求
+ * @param  BufferDST: pointer to the destination buffer
+ *         指向目标位置的指针
+ * @param  BufferSize: buffer size
+ *         缓冲区大小
+ * @retval None
+ *         无返回值
+ */
+void SD_LowLevel_DMA_RxConfig(uint32_t *BufferDST, uint32_t BufferSize) {
+	DMA_InitTypeDef DMA_InitStructure;
+
+	DMA_ClearFlag(
+			DMA2_FLAG_TC4 | DMA2_FLAG_TE4 | DMA2_FLAG_HT4 | DMA2_FLAG_GL4);
+
+	/*!< DMA2 Channel4 disable */
+	DMA_Cmd(DMA2_Channel4, DISABLE);
+
+	/*!< DMA2 Channel4 Config */
+	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) SDIO_FIFO_ADDRESS;
+	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) BufferDST;
+	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+	DMA_InitStructure.DMA_BufferSize = BufferSize / 4;
+	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
+	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
+	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+	DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+	DMA_Init(DMA2_Channel4, &DMA_InitStructure);
+
+	/*!< DMA2 Channel4 enable */
+	DMA_Cmd(DMA2_Channel4, ENABLE);
+}
+
+/**
+ * @brief  DeInitializes the SDIO interface.
+ * @param  None
+ * @retval None
+ */
+void SD_DeInit(void) {
+	SD_LowLevel_DeInit();
+}
+
 /**
  * @brief  Initializes the SD Card and put it into StandBy State (Ready for data
  *         transfer).
@@ -384,6 +554,8 @@ SD_Error SD_Init(void) {
 	/*初始化引脚*/
 	SD_LowLevel_Init();
 
+	//SDIO外设寄存器设置为默认值
+	SDIO_DeInit();
 	/*上电并进行卡识别流程，确认卡的操作电压*/
 	errorstatus = SD_PowerON();
 
@@ -473,79 +645,6 @@ SDCardState SD_GetState(void) {
 	} else {
 		return (SDCardState) ((resp1 >> 9) & 0x0F);
 	}
-}
-
-/**
- * @brief  Configures the DMA2 Channel4 for SDIO Tx request.
- * @param  BufferSRC: pointer to the source buffer
- * @param  BufferSize: buffer size
- * @retval None
- */
-void SD_LowLevel_DMA_TxConfig(uint32_t *BufferSRC, uint32_t BufferSize) {
-
-	DMA_InitTypeDef DMA_InitStructure;
-
-	DMA_ClearFlag(
-			SD_SDIO_DMA_FLAG_TC | SD_SDIO_DMA_FLAG_TE | SD_SDIO_DMA_FLAG_HT
-					| SD_SDIO_DMA_FLAG_GL);
-
-	/*!< DMA2 Channel4 disable */
-	DMA_Cmd(SD_SDIO_DMA_CHANNEL, DISABLE);
-
-	/*!< SDIO DMA CHANNEL Config */
-	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) SDIO_FIFO_ADDRESS;
-	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) BufferSRC;
-	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
-	DMA_InitStructure.DMA_BufferSize = BufferSize / 4;
-	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
-	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-	DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-	DMA_Init(SD_SDIO_DMA_CHANNEL, &DMA_InitStructure);
-
-	DMA_ITConfig(SD_SDIO_DMA_CHANNEL, DMA_IT_TC, ENABLE);
-
-	/*!< SDIO DMA CHANNEL enable */
-	DMA_Cmd(SD_SDIO_DMA_CHANNEL, ENABLE);
-}
-
-/**
- * @brief  Configures the DMA2 Channel4 for SDIO Rx request.
- * @param  BufferDST: pointer to the destination buffer
- * @param  BufferSize: buffer size
- * @retval None
- */
-void SD_LowLevel_DMA_RxConfig(uint32_t *BufferDST, uint32_t BufferSize) {
-	DMA_InitTypeDef DMA_InitStructure;
-
-	DMA_ClearFlag(
-			SD_SDIO_DMA_FLAG_TC | SD_SDIO_DMA_FLAG_TE | SD_SDIO_DMA_FLAG_HT
-					| SD_SDIO_DMA_FLAG_GL);
-
-	/*!< SDIO DMA CHANNEL disable */
-	DMA_Cmd(SD_SDIO_DMA_CHANNEL, DISABLE);
-
-	/*!< SDIO DMA CHANNEL Config */
-	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) SDIO_FIFO_ADDRESS;
-	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) BufferDST;
-	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-	DMA_InitStructure.DMA_BufferSize = BufferSize / 4;
-	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
-	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-	DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-	DMA_Init(SD_SDIO_DMA_CHANNEL, &DMA_InitStructure);
-
-	DMA_ITConfig(SD_SDIO_DMA_CHANNEL, DMA_IT_TC, ENABLE);
-
-	/*!< SDIO DMA CHANNEL enable */
-	DMA_Cmd(SD_SDIO_DMA_CHANNEL, ENABLE);
 }
 
 /**
@@ -1234,7 +1333,7 @@ SD_Error SD_ReadBlock(uint8_t *readbuff, uint32_t ReadAddr, uint16_t BlockSize) 
 	 * 为512
 	 * 字节，不收影响
 	 */
-	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t)BlockSize;
+	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t) BlockSize;
 	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SET_BLOCKLEN;
 	SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short;
 	SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
@@ -1274,8 +1373,8 @@ SD_Error SD_ReadBlock(uint8_t *readbuff, uint32_t ReadAddr, uint16_t BlockSize) 
 	/*!< In case of single block transfer, no need of stop transfer at all.*/
 	/*!< Polling mode */
 	while (!(SDIO->STA
-			& (SDIO_FLAG_RXOVERR | SDIO_FLAG_DCRCFAIL | SDIO_FLAG_DTIMEOUT
-					| SDIO_FLAG_DBCKEND | SDIO_FLAG_STBITERR))) {
+					& (SDIO_FLAG_RXOVERR | SDIO_FLAG_DCRCFAIL | SDIO_FLAG_DTIMEOUT
+							| SDIO_FLAG_DBCKEND | SDIO_FLAG_STBITERR))) {
 		if (SDIO_GetFlagStatus(SDIO_FLAG_RXFIFOHF) != RESET) {
 			for (count = 0; count < 8; count++) {
 				*(tempbuff + count) = SDIO_ReadData();
@@ -1354,7 +1453,7 @@ SD_Error SD_ReadMultiBlocks(uint8_t *readbuff, uint32_t ReadAddr,
 	 * 为512
 	 * 字节，不收影响
 	 */
-	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t)BlockSize;
+	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t) BlockSize;
 	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SET_BLOCKLEN;
 	SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short;
 	SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
@@ -1460,6 +1559,7 @@ SD_Error SD_WriteBlock(uint8_t *writebuff, uint32_t WriteAddr,
 	SDIO->DCTRL = 0x0;
 
 	if (CardType == SDIO_HIGH_CAPACITY_SD_CARD) {
+		/*如果是SDHC，则块的长度是512*/
 		BlockSize = 512;
 		WriteAddr /= 512;
 	}
@@ -1471,7 +1571,7 @@ SD_Error SD_WriteBlock(uint8_t *writebuff, uint32_t WriteAddr,
 	 * 为512
 	 * 字节，不收影响
 	 */
-	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t)BlockSize;
+	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t) BlockSize;
 	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SET_BLOCKLEN;
 	SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short;
 	SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
@@ -1485,11 +1585,18 @@ SD_Error SD_WriteBlock(uint8_t *writebuff, uint32_t WriteAddr,
 	}
 	/*------------------------------------------------------------------------*/
 #endif
+
 	/*!< Send CMD24 WRITE_SINGLE_BLOCK */
+
+	/*块将要写入的地址*/
 	SDIO_CmdInitStructure.SDIO_Argument = WriteAddr;
+	/*CMD24*/
 	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_WRITE_SINGLE_BLOCK;
+	/*短响应*/
 	SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short;
+	/*关闭等待中断*/
 	SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
+	/*使能SD的命令状态*/
 	SDIO_CmdInitStructure.SDIO_CPSM = SDIO_CPSM_Enable;
 	SDIO_SendCommand(&SDIO_CmdInitStructure);
 
@@ -1510,14 +1617,14 @@ SD_Error SD_WriteBlock(uint8_t *writebuff, uint32_t WriteAddr,
 	/*!< In case of single data block transfer no need of stop command at all */
 #if defined (SD_POLLING_MODE)
 	while (!(SDIO->STA
-			& (SDIO_FLAG_DBCKEND | SDIO_FLAG_TXUNDERR | SDIO_FLAG_DCRCFAIL
-					| SDIO_FLAG_DTIMEOUT | SDIO_FLAG_STBITERR))) {
+					& (SDIO_FLAG_DBCKEND | SDIO_FLAG_TXUNDERR | SDIO_FLAG_DCRCFAIL
+							| SDIO_FLAG_DTIMEOUT | SDIO_FLAG_STBITERR))) {
 		if (SDIO_GetFlagStatus(SDIO_FLAG_TXFIFOHE) != RESET) {
 			if ((512 - bytestransferred) < 32) {
 				restwords =
-						((512 - bytestransferred) % 4 == 0) ?
-								((512 - bytestransferred) / 4) :
-								((512 - bytestransferred) / 4 + 1);
+				((512 - bytestransferred) % 4 == 0) ?
+				((512 - bytestransferred) / 4) :
+				((512 - bytestransferred) / 4 + 1);
 				for (count = 0; count < restwords;
 						count++, tempbuff++, bytestransferred += 4) {
 					SDIO_WriteData(*tempbuff);
@@ -1580,9 +1687,12 @@ SD_Error SD_WriteMultiBlocks(uint8_t *writebuff, uint32_t WriteAddr,
 	TransferEnd = 0;
 	StopCondition = 1;
 
+	//先清除数据控制寄存器
 	SDIO->DCTRL = 0x0;
 
 	if (CardType == SDIO_HIGH_CAPACITY_SD_CARD) {
+
+		/*若是SDHC大小为512字节，不受影响*/
 		BlockSize = 512;
 		WriteAddr /= 512;
 	}
@@ -1591,12 +1701,11 @@ SD_Error SD_WriteMultiBlocks(uint8_t *writebuff, uint32_t WriteAddr,
 	/*---------------------------------------------------------------------
 	 * 没有这一段容易卡死在DMA检测中
 	 * <! set Block Size for Card , CMD16,  若是SDSC卡，可以用来设置块大小，若是SDHC大小
-	 * 为512
-	 * 字节，不收影响
+	 * 为512字节，不受影响
 	 */
-	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t)BlockSize;
+	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t) BlockSize;
 	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SET_BLOCKLEN;
-	SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short;
+	SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short; //R1
 	SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
 	SDIO_CmdInitStructure.SDIO_CPSM = SDIO_CPSM_Enable;
 	SDIO_SendCommand(&SDIO_CmdInitStructure);
@@ -1607,9 +1716,14 @@ SD_Error SD_WriteMultiBlocks(uint8_t *writebuff, uint32_t WriteAddr,
 		return (errorstatus);
 	}
 	/*------------------------------------------------------------------------*/
-#endif	/*!< To improve performance */
+#endif
+
+
+
+
+	/*!< To improve performance */
 	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t) (RCA << 16);
-	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_APP_CMD;
+	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_APP_CMD;  //CMD55
 	SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short;
 	SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
 	SDIO_CmdInitStructure.SDIO_CPSM = SDIO_CPSM_Enable;
@@ -1624,7 +1738,7 @@ SD_Error SD_WriteMultiBlocks(uint8_t *writebuff, uint32_t WriteAddr,
 	/*在多块写入时，可发送此命令进行预擦除*/
 	/*参数是将要写入的块数目*/
 	SDIO_CmdInitStructure.SDIO_Argument = (uint32_t) NumberOfBlocks;
-	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SET_BLOCK_COUNT;
+	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SET_BLOCK_COUNT; //ACMD23
 	SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short;
 	SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
 	SDIO_CmdInitStructure.SDIO_CPSM = SDIO_CPSM_Enable;
@@ -1662,7 +1776,6 @@ SD_Error SD_WriteMultiBlocks(uint8_t *writebuff, uint32_t WriteAddr,
 	SDIO_DMACmd(ENABLE);
 	SD_LowLevel_DMA_TxConfig((uint32_t *) writebuff,
 			(NumberOfBlocks * BlockSize));
-
 	return (errorstatus);
 }
 
@@ -2529,12 +2642,17 @@ u8 SD_ReadDisk(u8*buf, u32 sector, u8 cnt) {
 				;
 		}
 	} else {
-		for (n = 0; n < cnt; n++) {
-			/*单个sector的读操作*/
-			sta = SD_ReadBlock(buf+ 512 * n, lsector + 512 * n, 512);
+		if(cnt == 1)
+		{
+			sta = SD_ReadBlock(buf, lsector, 512);
 			sta = SD_WaitReadOperation();
 			while (SD_GetStatus() != SD_TRANSFER_OK)
 				;
+		}
+		else
+		{
+			sta = SD_ReadMultiBlocks(buf, lsector, 512, cnt);
+			sta = SD_WaitReadOperation();
 		}
 	}
 	return sta;
@@ -2565,13 +2683,17 @@ u8 SD_WriteDisk(u8*buf, u32 sector, u8 cnt) {
 				;
 		}
 	} else {
-		/*循环cnt次*/
-		for (n = 0; n < cnt; n++) {
-			/*单个sector的写操作*/
-			sta = SD_WriteBlock(buf + 512 * n, lsector + 512 * n, 512);
+		if(cnt == 1)
+		{
+			sta = SD_WriteBlock(buf, lsector, 512);
 			sta = SD_WaitWriteOperation();
 			while (SD_GetStatus() != SD_TRANSFER_OK)
 				;
+		}
+		else
+		{
+			sta = SD_WriteMultiBlocks(buf, lsector, 512, cnt);
+			sta = SD_WaitWriteOperation();
 		}
 	}
 	return sta;

@@ -11,6 +11,7 @@
 #include <string.h>
 #include "diag/Trace.h"
 #include "stm32f10x_conf.h"
+#include "stm32f10x.h"
 #include "Led.h"
 #include "Lcd.h"
 #include "math.h"
@@ -85,7 +86,6 @@ void show_sdcard_info(void)
  	printf("Card BlockSize:%ld\r\n\r\n",SDCardInfo.CardBlockSize);
 }
 
-
 int main(void) {
 	delay_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
@@ -96,11 +96,8 @@ int main(void) {
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	MPU_Init();					//初始化MPU6050
 	POINT_COLOR=RED;			//设置字体为红色
-	LCD_ShowString(30,50,200,16,16,(u8 *)"WarShip STM32");
-	LCD_ShowString(30,70,200,16,16,(u8 *)"SD CARD TEST");
-	LCD_ShowString(30,90,200,16,16,(u8 *)"ATOM@ALIENTEK");
-	LCD_ShowString(30,110,200,16,16,(u8 *)"2015/1/20");
-	LCD_ShowString(30,130,200,16,16,(u8 *)"KEY0:Read Sector 0");
+	LCD_ShowString(30,50,200,16,16,(u8 *)"My SD Card Test");
+	LCD_ShowString(30,70,200,16,16,(u8 *)"KEY0:Mult Sector Test");
  	while(SD_Init())//检测不到SD卡
 	{
 		LCD_ShowString(30,150,200,16,16,(u8 *)"SD Card Error!");
@@ -117,6 +114,10 @@ int main(void) {
 	LCD_ShowNum(30+13*8,170,(SDCardInfo.CardCapacity>>30),5,16);//显示SD卡容量
 	LCD_ShowString(30,190,220,16,16,(u8 *)"Card BlockSize:");
 	LCD_ShowNum(30+16*8,190,SDCardInfo.CardBlockSize,5,16);//显示SD卡容量
+	LCD_ShowString(30,210,220,16,16,(u8 *)"Card CardType:");
+	LCD_ShowNum(30+16*8,210,SDCardInfo.CardType,5,16);
+
+
 	while(1)
 	{
 		delay_ms(300);
