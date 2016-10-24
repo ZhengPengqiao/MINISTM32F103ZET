@@ -24,6 +24,7 @@
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
 #include "sdio_sdcard.h"
+#include "ff.h"
 
 // ----------------------------------------------------------------------------
 //
@@ -69,22 +70,37 @@ extern SD_CardInfo SDCardInfo;
  * 参数介绍 : 无
  * 返回值     : 无
  ******************************************************************************/
-void show_sdcard_info(void)
-{
-	switch(SDCardInfo.CardType )
-	{
-		case SDIO_STD_CAPACITY_SD_CARD_V1_1:printf("Card Type:SDSC V1.1\r\n");break;
-		case SDIO_STD_CAPACITY_SD_CARD_V2_0:printf("Card Type:SDSC V2.0\r\n");break;
-		case SDIO_HIGH_CAPACITY_SD_CARD:printf("Card Type:SDHC V2.0\r\n");break;
-		case SDIO_MULTIMEDIA_CARD:printf("Card Type:MMC Card\r\n");break;
+void show_sdcard_info(void) {
+	switch (SDCardInfo.CardType) {
+	case SDIO_STD_CAPACITY_SD_CARD_V1_1:
+		printf("Card Type:SDSC V1.1\r\n");
+		break;
+	case SDIO_STD_CAPACITY_SD_CARD_V2_0:
+		printf("Card Type:SDSC V2.0\r\n");
+		break;
+	case SDIO_HIGH_CAPACITY_SD_CARD:
+		printf("Card Type:SDHC V2.0\r\n");
+		break;
+	case SDIO_MULTIMEDIA_CARD:
+		printf("Card Type:MMC Card\r\n");
+		break;
 	}
-  	printf("Card ManufacturerID:%d\r\n",SDCardInfo.SD_cid.ManufacturerID);	//制造商ID
- 	printf("Card RCA:%d\r\n",SDCardInfo.RCA);								//卡相对地址
- 	//显示容量   %ld位长类型
-	printf("Card Capacity:%ld MB\r\n",(u32)(SDCardInfo.CardCapacity>>20));
+	printf("Card ManufacturerID:%d\r\n", SDCardInfo.SD_cid.ManufacturerID);	//制造商ID
+	printf("Card RCA:%d\r\n", SDCardInfo.RCA);							//卡相对地址
+	//显示容量   %ld位长类型
+	printf("Card Capacity:%ld MB\r\n", (u32) (SDCardInfo.CardCapacity >> 20));
 	//显示块大小  %ld位长类型
- 	printf("Card BlockSize:%ld\r\n\r\n",SDCardInfo.CardBlockSize);
+	printf("Card BlockSize:%ld\r\n\r\n", SDCardInfo.CardBlockSize);
 }
+
+int res;  //读写文件的返回值
+int a;
+int i = 0;
+FIL  fd;  //文件系统结构体，包含文件指针等成员。
+FATFS fs;       //记录文件系统盘符结构体信息的结构体
+UINT br, bw;     //File R/W count
+BYTE buffer[512];  //file copy buffer
+BYTE textFileBuffer[] = "这是测试文字，只是用来测试，看看乱码不！ >_<\r\n";
 
 int main(void) {
 	delay_init(); //初始化系统滴答定时器
@@ -95,31 +111,70 @@ int main(void) {
 
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	MPU_Init();					//初始化MPU6050
-	POINT_COLOR=RED;			//设置字体为红色
-	LCD_ShowString(30,50,200,16,16,(u8 *)"My SD Card Test");
-	LCD_ShowString(30,70,200,16,16,(u8 *)"KEY0:Mult Sector Test");
- 	while(SD_Init())//检测不到SD卡
+	POINT_COLOR = RED;			//设置字体为红色
+	LCD_ShowString(30, 50, 200, 16, 16, (u8 *) "My SD Card Test");
+	LCD_ShowString(30, 70, 200, 16, 16, (u8 *) "KEY0:Mult Sector Test");
+	while (SD_Init())			//检测不到SD卡
 	{
-		LCD_ShowString(30,150,200,16,16,(u8 *)"SD Card Error!");
+		LCD_ShowString(30, 150, 200, 16, 16, (u8 *) "SD Card Error!");
 		delay_ms(500);
-		LCD_ShowString(30,150,200,16,16,(u8 *)"Please Check! ");
+		LCD_ShowString(30, 150, 200, 16, 16, (u8 *) "Please Check! ");
 		delay_ms(500);
 		led_toggle(0);
 	}
 	show_sdcard_info();	//打印SD卡相关信息
- 	POINT_COLOR=BLUE;	//设置字体为蓝色
+	POINT_COLOR = BLUE;	//设置字体为蓝色
 	//检测SD卡成功,显示SD卡信息
-	LCD_ShowString(30,150,200,16,16,(u8 *)"SD Card OK    ");
-	LCD_ShowString(30,170,200,16,16,(u8 *)"SD Card Size:        GB");
-	LCD_ShowNum(30+13*8,170,(SDCardInfo.CardCapacity>>30),5,16);//显示SD卡容量
-	LCD_ShowString(30,190,220,16,16,(u8 *)"Card BlockSize:");
-	LCD_ShowNum(30+16*8,190,SDCardInfo.CardBlockSize,5,16);//显示SD卡容量
-	LCD_ShowString(30,210,220,16,16,(u8 *)"Card CardType:");
-	LCD_ShowNum(30+16*8,210,SDCardInfo.CardType,5,16);
+	LCD_ShowString(30, 150, 200, 16, 16, (u8 *) "SD Card OK    ");
+	LCD_ShowString(30, 170, 200, 16, 16, (u8 *) "SD Card Size:        GB");
+	LCD_ShowNum(30 + 13 * 8, 170, (SDCardInfo.CardCapacity >> 30), 5, 16);//显示SD卡容量
+	LCD_ShowString(30, 190, 220, 16, 16, (u8 *) "Card BlockSize:");
+	LCD_ShowNum(30 + 16 * 8, 190, SDCardInfo.CardBlockSize, 5, 16);	//显示SD卡容量
+	LCD_ShowString(30, 210, 220, 16, 16, (u8 *) "Card CardType:");
+	LCD_ShowNum(30 + 16 * 8, 210, SDCardInfo.CardType, 5, 16);
 
+	f_mount(0,&fs);
+	res = f_open(&fd, "0:/Dem2.txt", FA_CREATE_NEW | FA_WRITE);
+	if (res == FR_OK) {
+		/*将缓冲区的内容写入到文件中*/
+		res = f_write(&fd, textFileBuffer, sizeof(textFileBuffer), &bw);
+		printf("File create OK\r\n");
+		f_close(&fd);
+	} else {
+		printf("file exit...\r\n");
+	}
 
-	while(1)
+	/*以只读方式打开刚刚创建的文件*/
+	res = f_open(&fd, "0:/Dem2.txt", FA_OPEN_EXISTING | FA_READ);
+
+	if(res == FR_OK)
 	{
+		printf("File open OK\r\n");
+	} else {
+		printf("file open err\r\n");
+	}
+	/*打开文件*/
+	br = 1;
+	a = 0;
+	for(;;)
+	{
+		/*清空缓冲区*/
+		for(a = 0; a < 512; a++)
+		{
+			buffer[a] = 0;
+		}
+		/*将文件内容读到缓冲区*/
+		res = f_read(&fd,buffer,sizeof(buffer),&br);
+		/*输出到控制台*/
+		printf("%d Line: %s \r\n",i++,buffer);
+		if(res || br == 0)
+		{
+			break;
+		}
+	}
+	f_close(&fd);
+
+	while (1) {
 		delay_ms(300);
 		led_toggle(0);
 	}
