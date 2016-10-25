@@ -20,11 +20,7 @@
 #include "Key.h"
 #include "PWM.h"
 #include "Delay.h"
-#include "mpu6050.h"
-#include "inv_mpu.h"
-#include "inv_mpu_dmp_motion_driver.h"
-#include "sdio_sdcard.h"
-#include "ff.h"
+#include "rtc.h"
 
 // ----------------------------------------------------------------------------
 //
@@ -63,121 +59,59 @@
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-extern SD_CardInfo SDCardInfo;
-/*******************************************************************************
- * 函数名称 : show_sdcard_info
- * 函数介绍 : 通过串口打印SD卡相关信息
- * 参数介绍 : 无
- * 返回值     : 无
- ******************************************************************************/
-void show_sdcard_info(void) {
-	switch (SDCardInfo.CardType) {
-	case SDIO_STD_CAPACITY_SD_CARD_V1_1:
-		printf("Card Type:SDSC V1.1\r\n");
-		break;
-	case SDIO_STD_CAPACITY_SD_CARD_V2_0:
-		printf("Card Type:SDSC V2.0\r\n");
-		break;
-	case SDIO_HIGH_CAPACITY_SD_CARD:
-		printf("Card Type:SDHC V2.0\r\n");
-		break;
-	case SDIO_MULTIMEDIA_CARD:
-		printf("Card Type:MMC Card\r\n");
-		break;
-	}
-	printf("Card ManufacturerID:%d\r\n", SDCardInfo.SD_cid.ManufacturerID);	//制造商ID
-	printf("Card RCA:%d\r\n", SDCardInfo.RCA);							//卡相对地址
-	//显示容量   %ld位长类型
-	printf("Card Capacity:%ld MB\r\n", (u32) (SDCardInfo.CardCapacity >> 20));
-	//显示块大小  %ld位长类型
-	printf("Card BlockSize:%ld\r\n\r\n", SDCardInfo.CardBlockSize);
-}
-
-int res;  //读写文件的返回值
-int a;
-int i = 0;
-FIL  fd;  //文件系统结构体，包含文件指针等成员。
-FATFS fs;       //记录文件系统盘符结构体信息的结构体
-UINT br, bw;     //File R/W count
-BYTE buffer[512];  //file copy buffer
-BYTE textFileBuffer[] = "这是测试文字，只是用来测试，看看乱码不！ >_<\r\naaaaaaaaa\r\n"
-		"bbbbbbbbbbbbb\r\nccccccccccccccccc\r\nddddddddddd\r\n";
-
 int main(void) {
+	int t = -1;
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
+
 	delay_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
 	LCD_Init();  //初始化LCD
 	key_init();
 	uart_init(115200);
+	rtcInit();
+	rtcSet(2016,10,25,22,29,30);
+	POINT_COLOR=DARKBLUE;
+	LCD_ShowString(60,70,200,16,16,(u8*)"RTC TEST");
 
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
-
-	MPU_Init();					//初始化MPU6050
-	POINT_COLOR = RED;			//设置字体为红色
-	LCD_ShowString(30, 50, 200, 16, 16, (u8 *) "My SD Card Test");
-	LCD_ShowString(30, 70, 200, 16, 16, (u8 *) "KEY0:Mult Sector Test");
-
-	res = f_mount(0,&fs);
-	if (res == FR_OK) {
-		printf("File mount OK \r\n");
-	} else {
-		printf("File mount ERR  %d\r\n",res);
-	}
-
-	show_sdcard_info();	//打印SD卡相关信息
-	POINT_COLOR = BLUE;	//设置字体为蓝色
-	//检测SD卡成功,显示SD卡信息
-	LCD_ShowString(30, 150, 200, 16, 16, (u8 *) "SD Card OK    ");
-	LCD_ShowString(30, 170, 200, 16, 16, (u8 *) "SD Card Size:        GB");
-	LCD_ShowNum(30 + 13 * 8, 170, (SDCardInfo.CardCapacity >> 30), 5, 16);//显示SD卡容量
-	LCD_ShowString(30, 190, 220, 16, 16, (u8 *) "Card BlockSize:");
-	LCD_ShowNum(30 + 16 * 8, 190, SDCardInfo.CardBlockSize, 5, 16);	//显示SD卡容量
-	LCD_ShowString(30, 210, 220, 16, 16, (u8 *) "Card CardType:");
-	LCD_ShowNum(30 + 16 * 8, 210, SDCardInfo.CardType, 5, 16);
-
-
-	res = f_open(&fd, "0:/Dem2.txt", FA_CREATE_NEW | FA_WRITE);
-
-	if (res == FR_OK) {
-		/*将缓冲区的内容写入到文件中*/
-		res = f_write(&fd, textFileBuffer, sizeof(textFileBuffer), &bw);
-		printf("File create OK\r\n");
-		f_close(&fd);
-	} else {
-		printf("file exit... %d\r\n",res);
-	}
-
-	/*以只读方式打开刚刚创建的文件*/
-	res = f_open(&fd, "0:/Dem2.txt", FA_OPEN_EXISTING | FA_READ);
-
-	if(res == FR_OK){
-		printf("File open OK\r\n");
-	} else {
-		printf("file open err  %d\r\n",res);
-	}
-
-	/*打开文件*/
-	br = 1;
-	a = 0;
-	for(;;){
-		/*清空缓冲区*/
-		for(a = 0; a < 512; a++){
-			buffer[a] = 0;
-		}
-		/*将文件内容读到缓冲区*/
-		res = f_read(&fd,buffer,sizeof(buffer),&br);
-		/*输出到控制台*/
-		printf("%d Line: %s \r\n",i++,buffer);
-		if(res || br == 0){
-			break;
-		}
-	}
-	f_close(&fd);
-
+	POINT_COLOR=BLUE;
+	LCD_ShowString(60,130,200,16,16,(u8*)"    -  -  ");
+	LCD_ShowString(60,162,200,16,16,(u8*)"  :  :  ");
 	while (1) {
-		delay_ms(300);
-		led_toggle(0);
-	}
+		if (t != calendar.sec) {
+			t = calendar.sec;
+			LCD_ShowNum(60, 130, calendar.w_year, 4, 16);
+			LCD_ShowNum(100, 130, calendar.w_month, 2, 16);
+			LCD_ShowNum(124, 130, calendar.w_date, 2, 16);
+			switch (calendar.week) {
+			case 0:
+				LCD_ShowString(60, 148, 200, 16, 16, (u8*)"Sunday   ");
+				break;
+			case 1:
+				LCD_ShowString(60, 148, 200, 16, 16, (u8*)"Monday   ");
+				break;
+			case 2:
+				LCD_ShowString(60, 148, 200, 16, 16, (u8*)"Tuesday  ");
+				break;
+			case 3:
+				LCD_ShowString(60, 148, 200, 16, 16, (u8*)"Wednesday");
+				break;
+			case 4:
+				LCD_ShowString(60, 148, 200, 16, 16, (u8*)"Thursday ");
+				break;
+			case 5:
+				LCD_ShowString(60, 148, 200, 16, 16, (u8*)"Friday   ");
+				break;
+			case 6:
+				LCD_ShowString(60, 148, 200, 16, 16, (u8*)"Saturday ");
+				break;
+			}
+			LCD_ShowNum(60, 162, calendar.hour, 2, 16);
+			LCD_ShowNum(84, 162, calendar.min, 2, 16);
+			LCD_ShowNum(108, 162, calendar.sec, 2, 16);
+			led_toggle(0);
+		}
+		delay_ms(10);
+	};
 }
 
 #pragma GCC diagnostic pop
