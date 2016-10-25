@@ -8,14 +8,8 @@
 /*-----------------------------------------------------------------------*/
 
 #include "diskio.h"		/* FatFs lower layer API */
-//#include "usbdisk.h"	/* Example: USB drive control */
-//#include "atadrive.h"	/* Example: ATA drive control */
 #include "sdio_sdcard.h"		/* Example: MMC/SDC contorl */
 
-/* Definitions of physical drive number for each media */
-//#define ATA		0
-//#define MMC		1
-//#define USB		2
 
 extern SD_CardInfo SDCardInfo;
 /*-----------------------------------------------------------------------*/
@@ -36,6 +30,7 @@ DSTATUS disk_initialize (
 				return 0;
 			else
 				return STA_NOINIT;
+		default : return STA_NOINIT;
   }
 	return STA_NOINIT;
 }

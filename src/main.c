@@ -100,7 +100,8 @@ FIL  fd;  //文件系统结构体，包含文件指针等成员。
 FATFS fs;       //记录文件系统盘符结构体信息的结构体
 UINT br, bw;     //File R/W count
 BYTE buffer[512];  //file copy buffer
-BYTE textFileBuffer[] = "这是测试文字，只是用来测试，看看乱码不！ >_<\r\n";
+BYTE textFileBuffer[] = "这是测试文字，只是用来测试，看看乱码不！ >_<\r\naaaaaaaaa\r\n"
+		"bbbbbbbbbbbbb\r\nccccccccccccccccc\r\nddddddddddd\r\n";
 
 int main(void) {
 	delay_init(); //初始化系统滴答定时器
@@ -110,18 +111,19 @@ int main(void) {
 	uart_init(115200);
 
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
+
 	MPU_Init();					//初始化MPU6050
 	POINT_COLOR = RED;			//设置字体为红色
 	LCD_ShowString(30, 50, 200, 16, 16, (u8 *) "My SD Card Test");
 	LCD_ShowString(30, 70, 200, 16, 16, (u8 *) "KEY0:Mult Sector Test");
-	while (SD_Init())			//检测不到SD卡
-	{
-		LCD_ShowString(30, 150, 200, 16, 16, (u8 *) "SD Card Error!");
-		delay_ms(500);
-		LCD_ShowString(30, 150, 200, 16, 16, (u8 *) "Please Check! ");
-		delay_ms(500);
-		led_toggle(0);
+
+	res = f_mount(0,&fs);
+	if (res == FR_OK) {
+		printf("File mount OK \r\n");
+	} else {
+		printf("File mount ERR  %d\r\n",res);
 	}
+
 	show_sdcard_info();	//打印SD卡相关信息
 	POINT_COLOR = BLUE;	//设置字体为蓝色
 	//检测SD卡成功,显示SD卡信息
@@ -133,42 +135,40 @@ int main(void) {
 	LCD_ShowString(30, 210, 220, 16, 16, (u8 *) "Card CardType:");
 	LCD_ShowNum(30 + 16 * 8, 210, SDCardInfo.CardType, 5, 16);
 
-	f_mount(0,&fs);
+
 	res = f_open(&fd, "0:/Dem2.txt", FA_CREATE_NEW | FA_WRITE);
+
 	if (res == FR_OK) {
 		/*将缓冲区的内容写入到文件中*/
 		res = f_write(&fd, textFileBuffer, sizeof(textFileBuffer), &bw);
 		printf("File create OK\r\n");
 		f_close(&fd);
 	} else {
-		printf("file exit...\r\n");
+		printf("file exit... %d\r\n",res);
 	}
 
 	/*以只读方式打开刚刚创建的文件*/
 	res = f_open(&fd, "0:/Dem2.txt", FA_OPEN_EXISTING | FA_READ);
 
-	if(res == FR_OK)
-	{
+	if(res == FR_OK){
 		printf("File open OK\r\n");
 	} else {
-		printf("file open err\r\n");
+		printf("file open err  %d\r\n",res);
 	}
+
 	/*打开文件*/
 	br = 1;
 	a = 0;
-	for(;;)
-	{
+	for(;;){
 		/*清空缓冲区*/
-		for(a = 0; a < 512; a++)
-		{
+		for(a = 0; a < 512; a++){
 			buffer[a] = 0;
 		}
 		/*将文件内容读到缓冲区*/
 		res = f_read(&fd,buffer,sizeof(buffer),&br);
 		/*输出到控制台*/
 		printf("%d Line: %s \r\n",i++,buffer);
-		if(res || br == 0)
-		{
+		if(res || br == 0){
 			break;
 		}
 	}

@@ -33,8 +33,11 @@
 
 
 /* Uncomment the following line to select the SDIO Data transfer mode */
-#define SD_DMA_MODE                                ((uint32_t)0x00000000)
-//#define SD_POLLING_MODE                            ((uint32_t)0x00000002)
+
+ /*SD_DMA_MODE模式已经移植完成*/
+ #define SD_DMA_MODE                                ((uint32_t)0x00000000)
+ /*SD_POLLING_MODE模式还没有移植完成，也即是说不能使用*/
+ //#define SD_POLLING_MODE                            ((uint32_t)0x00000002)
 /**
  *  用户配置区
  *  SDIO时钟计算公式:SDIO_CK时钟=SDIOCLK/[clkdiv+2];其中,SDIOCLK一般为72Mhz

@@ -2,6 +2,8 @@
 #include "stdio.h"
 #include "Lcd.h"
 #include "sdio_sdcard.h"
+#include "ff.h"
+int sec = 0;
 void key_init() {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
@@ -54,9 +56,6 @@ void key_init() {
 }
 
 void EXTI0_IRQHandler(void) {
-	u8 buf[1024];
-	int sd_size;
-	int status;
 	int i;
 	if (EXTI_GetITStatus(EXTI_Line0) != RESET) {
 		//短暂延时，然后查看引脚状态，防止干扰
@@ -66,23 +65,8 @@ void EXTI0_IRQHandler(void) {
 		{
 
 /*====按键用户处理部分          ==========================================================*/
-			status = SD_ReadDisk(buf, 0, 2);
 
-			if (status == SD_OK) {
-				LCD_ShowString(30, 190, 200, 16, 16,
-						(u8*) "USART1 Sending Data...");
-				printf("SECTOR 0 DATA:\r\n");
-
-				/*将数据输出到串口*/
-				for (sd_size = 0; sd_size < 1024; sd_size++)
-				printf("%x ", buf[sd_size]);
-				printf("\r\nDATA ENDED\r\n");
-				LCD_ShowString(30, 190, 200, 16, 16,
-						(u8*) "USART1 Send Data Over!");
-			}
 /*====按键用户处理部分结束位置      ======================================================*/
-
-
 		}
 		EXTI_ClearITPendingBit(EXTI_Line0);
 	}
@@ -90,11 +74,13 @@ void EXTI0_IRQHandler(void) {
 
 //Key3按键
 void EXTI4_IRQHandler(void) {
-	u8 buf[1024];
-	int sd_size;
-	int status;
-	int i;
-	static int val = 1;
+	int i = 1;
+
+	int res;  //读写文件的返回值
+	int a;
+	FIL  fd;  //文件系统结构体，包含文件指针等成员。
+	UINT br ;     //File R/W count
+	BYTE buffer[512];  //file copy buffer
 	if (EXTI_GetITStatus(EXTI_Line4) != RESET) {
 
 		//短暂延时，然后查看引脚状态，防止干扰
@@ -104,21 +90,32 @@ void EXTI4_IRQHandler(void) {
 		if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_4) == 0)
 		{
 
-
 /*==== 按键用户处理部分     ==========================================================*/
-			//初始化数组
-			for (sd_size = 0; sd_size < 1024; sd_size++)
-			{
-				buf[sd_size] = val;
-			}
-			val++;
-			//将数据写入到分区
-			status = SD_WriteDisk(buf, 0, 1);
+			res = f_open(&fd, "0:/Dem1.txt", FA_OPEN_EXISTING | FA_READ);
 
-			if (status == SD_OK) {
-				LCD_ShowString(30, 230, 200, 16, 16, (u8*) "write OK");
+			if(res == FR_OK){
+				printf("File open OK\r\n");
+			} else {
+				printf("file open err  %d\r\n",res);
 			}
 
+			/*打开文件*/
+			br = 1;
+			a = 0;
+			for(;;){
+				/*清空缓冲区*/
+				for(a = 0; a < 512; a++){
+					buffer[a] = 0;
+				}
+				/*将文件内容读到缓冲区*/
+				res = f_read(&fd,buffer,sizeof(buffer),&br);
+				/*输出到控制台*/
+				printf("%d Line: %s \r\n",i++,buffer);
+				if(res || br == 0){
+					break;
+				}
+			}
+			f_close(&fd);
 			led_toggle(1);
 /*====  按键用户处理部分结束位置      ====================================================*/
 
