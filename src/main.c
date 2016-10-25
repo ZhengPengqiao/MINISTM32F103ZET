@@ -69,7 +69,6 @@ int main(void) {
 	key_init();
 	uart_init(115200);
 	rtcInit();
-	rtcSet(2016,10,25,22,29,30);
 	POINT_COLOR=DARKBLUE;
 	LCD_ShowString(60,70,200,16,16,(u8*)"RTC TEST");
 
