@@ -1,4 +1,8 @@
 #include "Key.h"
+#include "DS1302.h"
+
+/*定义按键事件*/
+int key = 0;
 void key_init()
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -52,20 +56,48 @@ void key_init()
 	EXTI_Init(&EXTI_InitStructure);
 }
 
+
+unsigned char getKey()
+{
+	unsigned char tem = key;
+	key = 0;
+	return tem;
+}
+
 void EXTI0_IRQHandler(void)
 {
-	if(EXTI_GetITStatus(EXTI_Line0) != RESET)
-	{
-		led_toggle(0);
+	int i;
+	if (EXTI_GetITStatus(EXTI_Line0) != RESET) {
+		//短暂延时，然后查看引脚状态，防止干扰
+		//向内存卡写入数据
+		for(i = 0; i < 100000; i++);
+		if(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0) == 1)
+		{
+
+/*====按键用户处理部分          ==========================================================*/
+			key = 2;
+			led_toggle(0);
+/*====按键用户处理部分结束位置      ======================================================*/
+		}
 		EXTI_ClearITPendingBit(EXTI_Line0);
 	}
 }
 
 void EXTI4_IRQHandler(void)
 {
+	int i;
 	if(EXTI_GetITStatus(EXTI_Line4) != RESET)
 	{
-		led_toggle(1);
+		//短暂延时，然后查看引脚状态，防止干扰
+		for(i = 0; i < 100000; i++);
+
+		if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_4) == 0)
+		{
+/*==== 按键用户处理部分=========================================================*/
+			key = 3;
+			led_toggle(1);
+/*==== 按键用户处理部分结束位置===================================================*/
+		}
 		EXTI_ClearITPendingBit(EXTI_Line4);
 	}
 }

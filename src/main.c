@@ -15,6 +15,7 @@
 #include "usart.h"
 #include "Key.h"
 #include "Timer.h"
+#include "DS1302.h"
 // ----------------------------------------------------------------------------
 //
 // Standalone STM32F1 led blink sample (trace via DEBUG).
@@ -54,21 +55,36 @@
 
 int main(void)
 {
-	char str[100];
-	int len = 0;
+	DataStruct time;
 	timer_init(); //初始化系统滴答定时器
 	led_init();  //初始化LED引脚
 	LCD_Init();  //初始化LCD
 	key_init();
+	initDS1302();
 	uart_init(115200);
-	LCD_ShowString(30, 40, 210, 24, 24, (u8*) "hello world");
-	LCD_ShowString(30, 70, 200, 16, 16, (u8*) "TFTLCD TEST");
-	LCD_ShowString(30, 90, 200, 16, 16, (u8*) "Look Here");
-	LCD_ShowString(30, 130, 200, 12, 12, (u8*) "2016/10/05");
 	while (1)
 	{
-		len = readStringRaw(str,100);
-		printf("%s, %d\n",str,len);
+		getDs1302Time(&time);
+		LCD_ShowNum(60,100,time.year,4,16);
+		LCD_ShowNum(100,100,time.month,2,16);
+		LCD_ShowNum(140,100,time.day,2,16);
+		LCD_ShowNum(60,150,time.hour,2,16);
+		LCD_ShowNum(100,150,time.minutes,2,16);
+		LCD_ShowNum(140,150,time.seconds,2,16);
+		LCD_ShowNum(60,200,time.week,2,16);
+		timer_ms(300);
+
+		/*使用按键调节分钟数，只是简单的示例*/
+		switch(getKey()){
+		case 2:
+			time.minutes--;
+			setDs1302Time(&time);
+			break;
+		case 3:
+			time.minutes++;
+			setDs1302Time(&time);
+			break;
+		}
 	}
 }
 

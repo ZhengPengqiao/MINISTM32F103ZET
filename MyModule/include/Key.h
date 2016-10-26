@@ -10,7 +10,7 @@
 
 extern void key_init();
 
-extern unsigned char key_scan();
+extern unsigned char getKey();
 
 extern unsigned char KEY2_Scan(void);
 
