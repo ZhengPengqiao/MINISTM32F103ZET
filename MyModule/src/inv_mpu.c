@@ -17,6 +17,7 @@
  *                  MPU9150 (or MPU6050 w/ AK8975 on the auxiliary bus)
  *                  MPU9250 (or MPU6500 w/ AK8963 on the auxiliary bus)
  */
+#include <Delay.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,7 +26,6 @@
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
 #include "mpu6050.h"
-#include "delay.h"
 #include "usart.h"
 
 #define MPU6050							//定义我们使用的传感器为MPU6050
@@ -90,7 +90,7 @@ static inline int reg_int_cb(struct int_param_s *int_param)
  * a TWI driver that follows the slave address + register address convention.
  */
 #include "twi.h"
-#include "delay.h"
+#include <Delay.h>
 #include "sysclk.h"
 #include "log.h"
 #include "sensors_xplained.h"

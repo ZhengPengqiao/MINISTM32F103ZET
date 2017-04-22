@@ -19,7 +19,6 @@
 #include "usart.h"
 #include "Key.h"
 #include "PWM.h"
-#include "Delay.h"
 #include "rtc.h"
 
 // ----------------------------------------------------------------------------

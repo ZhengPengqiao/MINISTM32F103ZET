@@ -1,0 +1,5 @@
+h
+connect
+loadbin ./Debug/MINISTM32F103ZET.bin 0x08000000
+g
+qc

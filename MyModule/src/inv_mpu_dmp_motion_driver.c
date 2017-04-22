@@ -14,6 +14,7 @@
  *      @details    All functions are preceded by the dmp_ prefix to
  *                  differentiate among MPL and general driver function calls.
  */
+#include <Delay.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -24,9 +25,8 @@
 #include "dmpKey.h"
 #include "dmpmap.h"
 #include "usart.h"
-#include "delay.h"
 
-//¶¨ÒåÄ¿±ê°å²ÉÓÃMSP430
+//ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½MSP430
 #define  MOTION_DRIVER_TARGET_MSP430
 
 /* The following functions must be defined for this platform:
@@ -58,7 +58,7 @@
 /* Instead of using the standard TWI driver from the ASF library, we're using
  * a TWI driver that follows the slave address + register address convention.
  */
-#include "delay.h"
+#include <Delay.h>
 #include "sysclk.h"
 #include "log.h"
 #include "uc3l0_clock.h"
