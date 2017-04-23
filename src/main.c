@@ -213,7 +213,7 @@ int main(void) {
 			switch( nowStatus ){
 			case 0:
 				//上电
-				led_off(0);  //这是引脚输出高电压
+				led_on(1);  //这是引脚输出高电压
 				 //将状态设置为等待上电完成， 并更新上电等待完成时的时间
 				nextDoTimeValue = rtcTimeValue + startUpTime;
 				nowStatus = 1;
@@ -254,7 +254,7 @@ int main(void) {
 				LCD_ShowString(50,288,160,16,16,    (u8*)"Power OFF        ");
 				break;
 			case 3:  //断电
-				led_on(0);  //这是引脚输出低电压
+				led_off(1);  //这是引脚输出低电压
 				nextDoTimeValue = rtcTimeValue + cutOutTime;
 				nowStatus = 4;
 
@@ -272,7 +272,7 @@ int main(void) {
 		}
 		//按照间隔闪烁LED灯
 		if ( rtcTimeValue >= ledTimeValue ) {
-			led_toggle(1);
+			led_toggle(0);
 			ledTimeValue = rtcTimeValue + 1;   //一秒一刷新
 			LCD_ShowxNum(16,208,calendar.hour,2,16,0X80);
 			LCD_ShowxNum(40,208,calendar.min,2,16,0X80);
