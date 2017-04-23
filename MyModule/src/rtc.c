@@ -5,6 +5,8 @@
 #include "stdio.h"
 
 calendarStruct calendar; //时钟结构体
+u32 rtcTimeValue; //为解析成calendarStruct的值
+
 
 
 /*-----------------------------------------------------------------------------
@@ -208,6 +210,7 @@ u8 rtcGet(void) {
 	u32 temp = 0;
 	u16 temp1 = 0;
 	timecount = RTC_GetCounter();
+	rtcTimeValue = timecount;
 	temp = timecount / 86400;   //得到天数(秒钟数对应的)
 	if (daycnt != temp)   //超过一天了
 			{

@@ -13,7 +13,7 @@ typedef struct
 	vu8  week;    //星期 
 }calendarStruct;					 
 extern calendarStruct calendar;	//日历结构体
-
+extern u32 rtcTimeValue; //为解析成calendarStruct的值
 extern u8 const mon_table[12];	//月份日期数据表
 
 /*-----------------------------------------------------------------------------
