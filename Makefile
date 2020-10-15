@@ -5,7 +5,7 @@ CPP_SRCS :=
 
 INCLUDES := \
 	-I"./include" \
-	-I"/fromHere1/MINISTM32F103ZET/MyModule/include" \
+	-I"./MyModule/include" \
 	-I"./system/include" \
 	-I"./system/include/cmsis" \
 	-I"./system/include/stm32f1-stdperiph"
